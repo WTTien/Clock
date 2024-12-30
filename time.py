@@ -55,12 +55,12 @@ def move_hands_to(minute, hour):
 		minuteAdjust = 59 # 60 - 1
 	else:
 		minuteAdjust = minute - 1
-	minuteHandLag = minuteHandStepped < ((4096/60) * minuteAdjust)
+	minuteHandLag = minuteHandStepped < ((8192/60) * minuteAdjust)
 
 	if minuteHandLag :
-		minuteOutput = 69
+		minuteOutput = 137
 	else:
-		minuteOutput = 68
+		minuteOutput = 136
 
 	# This is comparing the past minute
 	if (hour % 12) == 0 and minute == 0:
@@ -78,7 +78,7 @@ def move_hands_to(minute, hour):
 	write_pcf8575(0x05, 0x00)
 
 	minuteHandStepped = minuteHandStepped + minuteOutput
-	if minuteHandStepped == 4096:
+	if minuteHandStepped == 8192:
 		minuteHandStepped = 0
 	
 	hourHandStepped = hourHandStepped + hourOutput
