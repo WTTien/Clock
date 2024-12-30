@@ -42,11 +42,11 @@ def spin_motor(minuteStep, hourStep):
 def start_at(minute, hour, updown):
 
   if updown == True:
-    minuteOutput = math.ceil((4096/60) * minute)
+    minuteOutput = math.ceil((8192/60) * minute)
     hourOutput = math.ceil((4096/720) * (minute + (60*hour)))
 
   elif updown == False:
-    minuteOutput = math.floor((4096/60) * minute)
+    minuteOutput = math.floor((8192/60) * minute)
     hourOutput = math.floor((4096/720) * (minute + (60*hour)))
 
 	spin_motor(minuteOutput, hourOutput)
