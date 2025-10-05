@@ -36,8 +36,10 @@ pico_sdk_init()
 # Add executable. Default name is the project name, version 0.1
 
 add_executable(clock
-    clock.c
-    )
+    clock.cpp
+    on_board_led.cpp
+    led.cpp
+)
 
 # pull in common dependencies
 target_link_libraries(clock pico_stdlib)
