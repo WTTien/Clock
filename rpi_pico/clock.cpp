@@ -1,5 +1,6 @@
 #include "on_board_led.hpp"
 #include "led.hpp"
+#include "gpio_stepper_motor.hpp"
 
 #include <stdio.h>
 
@@ -24,6 +25,10 @@ int main() {
     LED led_1A(6);
     rc = led_1A.init();
     hard_assert(rc == PICO_OK);
+
+    GPIOStepperMotor OLED_Motor(26, 22, 21, 20);
+    rc = OLED_Motor.init();
+    hard_assert(rc == PICO_OK);
     
     idx = 0;
     while (true)
@@ -35,17 +40,20 @@ int main() {
         led_1A.set_led(false);
         sleep_ms(LED_DELAY_MS);
 
+        OLED_Motor.step(512); // Clockwise
+
         printf("Hello World!\n");
 
         idx = 0;
         while(true) {
             c = getchar_timeout_us(0);
-            if (c == PICO_ERROR_TIMEOUT) break;
-            if (c == '\n' || c == '\r') {
-                buf[idx] = '\0';
-                printf("You entered: %s\n", buf);
-                break;
-            } else {
+            if(c != PICO_ERROR_TIMEOUT)
+            {
+                if (c == '\n' || c == '\r') {
+                    buf[idx] = '\0';
+                    printf("You entered: %s\n", buf);
+                    break;
+                }
                 if (idx < sizeof(buf) - 1) {
                     buf[idx++] = (char)c;
                 }

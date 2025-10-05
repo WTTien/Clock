@@ -39,6 +39,8 @@ add_executable(clock
     clock.cpp
     on_board_led.cpp
     led.cpp
+    stepper_motor.cpp
+    gpio_stepper_motor.cpp
 )
 
 # pull in common dependencies

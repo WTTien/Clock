@@ -8,12 +8,13 @@
 #include <stdio.h>
 #include "led.hpp"
 
-LED::LED(int pin) : pin(pin) {}
+LED::LED(uint pin) : pin(pin) {}
 
 
 bool LED::init() {
     gpio_init(pin);
     gpio_set_dir(pin, GPIO_OUT);
+    gpio_put(pin, 0); // Start with LED off
     return PICO_OK;
 }
 

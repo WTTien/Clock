@@ -5,7 +5,7 @@
 
 class LED {
 public:
-    LED(int pin);
+    LED(uint pin);
     bool init();
     void set_led(bool led_on);
     int get_pin() const;
