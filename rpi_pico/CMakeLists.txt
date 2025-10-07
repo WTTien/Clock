@@ -41,10 +41,11 @@ add_executable(clock
     led.cpp
     stepper_motor.cpp
     gpio_stepper_motor.cpp
+    pcf_stepper_motor.cpp
 )
 
 # pull in common dependencies
-target_link_libraries(clock pico_stdlib)
+target_link_libraries(clock pico_stdlib hardware_i2c)
 
 if (PICO_CYW43_SUPPORTED)
     target_link_libraries(clock pico_cyw43_arch_none)
