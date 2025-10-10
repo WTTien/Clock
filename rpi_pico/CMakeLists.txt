@@ -42,6 +42,7 @@ add_executable(clock
     stepper_motor.cpp
     gpio_stepper_motor.cpp
     pcf_stepper_motor.cpp
+    real_time_clock.cpp
 )
 
 # pull in common dependencies

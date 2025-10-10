@@ -2,6 +2,7 @@
 #include "led.hpp"
 #include "gpio_stepper_motor.hpp"
 #include "pcf_stepper_motor.hpp"
+#include "real_time_clock.hpp"
 
 #include "hardware/i2c.h"
 
@@ -59,6 +60,15 @@ int main() {
         I2C_PORT,
         0x20, // I2C address
         0, 1, 2, 3 // Pins on the expander
+    );
+    rc = date_motor.init();
+    hard_assert(rc == PICO_OK);
+
+    RealTimeClock rtc(
+        I2C_PORT,
+        0x68, // I2C address
+        12,   // Reset pin
+        13    // Interrupt pin
     );
     rc = date_motor.init();
     hard_assert(rc == PICO_OK);
