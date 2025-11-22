@@ -25,7 +25,7 @@
 void core1_main() {
     while (true) {
         tud_task();
-        sleep_ms(3);
+        usb_write();
     }
 }
 
@@ -34,14 +34,10 @@ int main() {
     // Initialize TinyUSB stack
     board_init();
     tusb_init();
-
-    // This is to test USB serial input output
+    // This is for USB serial input output
     stdio_init_all();
-    // char buf[128];
-    // int idx = 0;
-    // int c;
     
-    printf("Starting programme!\n");
+    send_to_print_safe("Starting programme!\n");
 
     // For PICO hardware peripherals initialization
     // Initialise I2C bus
@@ -102,9 +98,9 @@ int main() {
         sleep_ms(LED_DELAY_MS);
 
         OLED_Motor.step(256); // Clockwise
-        hour_minute_motor.step(256); // Clockwise
-        date_motor.step(256); // Clockwise
+        // hour_minute_motor.step(256); // Clockwise
+        // date_motor.step(256); // Clockwise
 
-        printf("Hello World!\n");
+        send_to_print_safe("Hello World!\n");
     }
 }
