@@ -35,9 +35,7 @@ int main() {
     board_init();
     tusb_init();
     // This is for USB serial input output
-    stdio_init_all();
-    
-    send_to_print_safe("Starting programme!\n");
+    stdio_init_all();    
 
     // For PICO hardware peripherals initialization
     // Initialise I2C bus
@@ -87,6 +85,7 @@ int main() {
 
 
     multicore_launch_core1(core1_main);
+    send_to_print_safe("Starting programme!\n");
 
     while (true)
     {

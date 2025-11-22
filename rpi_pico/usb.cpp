@@ -3,38 +3,41 @@
 char usb_queue[USB_QUEUE_SIZE];
 volatile uint32_t usb_q_head = 0;
 volatile uint32_t usb_q_tail = 0;
-mutex_t usb_queue_mutex;
 
-void send_to_print_safe(const char* str)
+static inline bool rb_push(char c) 
 {
-    if (!str) return;
+    uint32_t next = (usb_q_head + 1) % USB_QUEUE_SIZE;
+    if (next == usb_q_tail) return false;  // buffer full
 
-    mutex_enter_blocking(&usb_queue_mutex);
+    usb_queue[usb_q_head] = c;
+    __atomic_store_n(&usb_q_head, next, __ATOMIC_RELEASE);
+    return true;
+}
 
-    for (int i = 0; str[i] != '\0'; i++) {
-        uint32_t next = (usb_q_head + 1) % USB_QUEUE_SIZE;
-        if (next == usb_q_tail) break;  // buffer full, drop
-        usb_queue[usb_q_head] = str[i];
-        usb_q_head = next;
+static inline bool rb_pop(char* c) 
+{
+    uint32_t tail = __atomic_load_n(&usb_q_tail, __ATOMIC_ACQUIRE);
+    if (tail == usb_q_head) return false;  // buffer empty
+
+    *c = usb_queue[tail];
+    __atomic_store_n(&usb_q_tail, (tail + 1) % USB_QUEUE_SIZE, __ATOMIC_RELEASE);
+    return true;
+}
+
+void send_to_print_safe(const char* s)
+{
+    while (*s) {
+        rb_push(*s++);
     }
-
-    mutex_exit(&usb_queue_mutex);
 }
 
 void usb_write()
 {
-    // Drain queue → write to USB
-    mutex_enter_blocking(&usb_queue_mutex);
-
-    while (usb_q_tail != usb_q_head && tud_cdc_available() >= 0) {
-        uint8_t c = usb_queue[usb_q_tail];
-        usb_q_tail = (usb_q_tail + 1) % USB_QUEUE_SIZE;
-
+    char c;
+    while(tud_cdc_connected() && tud_cdc_write_available() && rb_pop(&c)) {
         tud_cdc_write_char(c);
     }
-
-    mutex_exit(&usb_queue_mutex);
-    
+        
     tud_cdc_write_flush();
 }
 

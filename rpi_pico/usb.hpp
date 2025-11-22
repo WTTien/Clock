@@ -8,7 +8,6 @@
 extern char usb_queue[USB_QUEUE_SIZE];
 extern volatile uint32_t usb_q_head;
 extern volatile uint32_t usb_q_tail;
-extern mutex_t usb_queue_mutex;
 
 // send_to_print_safe and usb_write function is used to synchronise USB serial printing across multiple cores.
 // Aims to have all USB operation handled in Core 1.
