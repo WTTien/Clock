@@ -3,10 +3,14 @@
 #include "gpio_stepper_motor.hpp"
 #include "pcf_stepper_motor.hpp"
 #include "real_time_clock.hpp"
+#include "usb.hpp"
 
 #include "hardware/i2c.h"
 
+#include <bsp/board_api.h>
 #include <stdio.h>
+
+#include "pico/multicore.h"
 
 #ifndef LED_DELAY_MS
 #define LED_DELAY_MS 1000
@@ -17,14 +21,26 @@
 #define I2C_SDA_PIN 14
 #define I2C_BAUDRATE 100000
 
+
+void core1_main() {
+    while (true) {
+        tud_task();
+        sleep_ms(3);
+    }
+}
+
 int main() {
+
+    // Initialize TinyUSB stack
+    board_init();
+    tusb_init();
 
     // This is to test USB serial input output
     stdio_init_all();
-    char buf[128];
-    int idx = 0;
-    int c;
-
+    // char buf[128];
+    // int idx = 0;
+    // int c;
+    
     printf("Starting programme!\n");
 
     // For PICO hardware peripherals initialization
@@ -73,6 +89,9 @@ int main() {
     rc = date_motor.init();
     hard_assert(rc == PICO_OK);
 
+
+    multicore_launch_core1(core1_main);
+
     while (true)
     {
         onboard_led.set_led(true);
@@ -87,22 +106,5 @@ int main() {
         date_motor.step(256); // Clockwise
 
         printf("Hello World!\n");
-
-        idx = 0;
-        while(true) {
-            c = getchar_timeout_us(0);
-            if(c != PICO_ERROR_TIMEOUT)
-            {
-                if (c == '\n' || c == '\r') {
-                    buf[idx] = '\0';
-                    printf("You entered: %s\n", buf);
-                    break;
-                }
-                if (idx < sizeof(buf) - 1) {
-                    buf[idx++] = (char)c;
-                }
-            }
-            sleep_ms(1);
-        }
     }
 }

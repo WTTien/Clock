@@ -43,10 +43,15 @@ add_executable(clock
     gpio_stepper_motor.cpp
     pcf_stepper_motor.cpp
     real_time_clock.cpp
+    usb.cpp
+    usb_device.c
 )
 
+target_include_directories(clock PRIVATE ${CMAKE_CURRENT_LIST_DIR}/tinyusb_config)
+
 # pull in common dependencies
-target_link_libraries(clock pico_stdlib hardware_i2c)
+target_link_libraries(clock pico_stdlib pico_multicore hardware_i2c tinyusb_device tinyusb_board)
+
 
 if (PICO_CYW43_SUPPORTED)
     target_link_libraries(clock pico_cyw43_arch_none)
