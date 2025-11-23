@@ -12,6 +12,8 @@
 
 #include "pico/multicore.h"
 
+#include "event_processor.hpp"
+
 #ifndef LED_DELAY_MS
 #define LED_DELAY_MS 1000
 #endif
@@ -101,5 +103,6 @@ int main() {
         // date_motor.step(256); // Clockwise
 
         send_to_print_safe("Hello World!\n");
+        process_event_queue();
     }
 }

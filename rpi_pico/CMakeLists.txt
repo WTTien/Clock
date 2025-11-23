@@ -44,6 +44,7 @@ add_executable(clock
     pcf_stepper_motor.cpp
     real_time_clock.cpp
     usb.cpp
+    event_processor.cpp
     usb_device.c
 )
 

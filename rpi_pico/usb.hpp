@@ -22,6 +22,7 @@ extern char event_queue[EVENT_QUEUE_SIZE][EVENT_MSG_SIZE];
 extern volatile uint32_t event_q_head;
 extern volatile uint32_t event_q_tail;
 // We will have a event processing function in other parts of the codebase, there is quite a few process to be done.
+bool pop_string_from_event_queue(char* out); //This function is used to get the next event string from event_queue.
 void tud_cdc_rx_cb(uint8_t itf);
 
 #endif // USB_HPP
