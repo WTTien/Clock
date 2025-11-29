@@ -1,8 +1,5 @@
 #include "pcf_stepper_motor.hpp"
 
-// TODO: Delete after
-#include <stdio.h>
-
 PCFStepperMotor::PCFStepperMotor(
     i2c_inst_t *i2c,
     uint8_t address, 

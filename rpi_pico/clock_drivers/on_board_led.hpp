@@ -9,6 +9,10 @@
 
 #include "pico/stdlib.h"
 
+#ifdef CYW43_WL_GPIO_LED_PIN
+#include "pico/cyw43_arch.h"
+#endif
+
 class OnBoardLED {
 public:
     OnBoardLED();
