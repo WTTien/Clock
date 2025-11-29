@@ -1,5 +1,8 @@
-#include "usb.hpp"
-#include "led.hpp" 
+#ifndef EVENT_PROCESSOR_HPP
+#define EVENT_PROCESSOR_HPP
+
+// #include "usb.hpp"
+#include "system.hpp" 
 #include <string>
 #include <string_view>
 
@@ -10,4 +13,6 @@ struct UserInput {
     std::string_view cmd;
 };
 
-void process_event_queue();
+void process_event_queue(System clock_system);
+
+#endif // EVENT_PROCESSOR_HPP

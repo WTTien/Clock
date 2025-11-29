@@ -46,6 +46,7 @@ add_executable(clock
     usb.cpp
     event_processor.cpp
     usb_device.c
+    system.cpp
 )
 
 target_include_directories(clock PRIVATE ${CMAKE_CURRENT_LIST_DIR}/tinyusb_config)
@@ -55,7 +56,7 @@ target_link_libraries(clock pico_stdlib pico_multicore hardware_i2c tinyusb_devi
 
 
 if (PICO_CYW43_SUPPORTED)
-    target_link_libraries(clock pico_cyw43_arch_none)
+    target_link_libraries(clock pico_cyw43_arch_lwip_threadsafe_background)
 endif()
 
 pico_enable_stdio_usb(clock 1)
