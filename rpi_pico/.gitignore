@@ -1,2 +1,4 @@
 build
 !.vscode/*
+clock_drivers/archives/
+tips.txt
