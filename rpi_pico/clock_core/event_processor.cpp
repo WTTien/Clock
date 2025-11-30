@@ -1,4 +1,5 @@
 #include "event_processor.hpp"
+#include "./system.hpp"
 
 static inline std::string_view trim(std::string_view sv)
 {
@@ -47,15 +48,12 @@ bool parse_user_cmd(std::string_view s, UserInput& out)
     return true;
 }
 
-void process_event_queue(System clock_system)
+void process_event_queue(System* clock_system)
 {
     char event_msg[EVENT_MSG_SIZE];
     if (pop_string_from_event_queue(event_msg)) {
         
         std::string_view msg(event_msg);
-        send_to_print_safe("Processing:\n");
-        send_to_print_safe(std::string(msg).c_str());
-        send_to_print_safe("\n");
         UserInput user_input;
 
         if(parse_user_cmd(msg, user_input)) {
@@ -63,11 +61,11 @@ void process_event_queue(System clock_system)
                 if (user_input.comp == "1A") {
                     if (user_input.cmd == "ON") {
                         send_to_print_safe("LED 1A turned ON.\n");
-                        clock_system.onboard_led.set_led(true);
+                        clock_system->onboard_led.set_led(true);
                     } 
                     else if (user_input.cmd == "OFF") {
                         send_to_print_safe("LED 1A turned OFF.\n");
-                        clock_system.onboard_led.set_led(false);
+                        clock_system->onboard_led.set_led(false);
                     } 
                     else {
                         send_to_print_safe("Unknown command for LED 1A!\n");

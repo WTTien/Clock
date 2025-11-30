@@ -3,7 +3,7 @@
 
 #include "stepper_motor.hpp"
 #include "hardware/i2c.h"
-#include "usb.hpp"
+#include "../clock_services/usb.hpp"
 
 class PCFStepperMotor : public StepperMotor {
 public:

@@ -5,7 +5,6 @@
 
 #include "tusb.h"
 #include <bsp/board_api.h>
-// #include <stdio.h>
 #include "pico/multicore.h"
 #include "pico/cyw43_arch.h"
 #include "../clock_services/usb.hpp"
@@ -18,7 +17,6 @@
 #include "../clock_drivers/pcf_stepper_motor.hpp"
 #include "../clock_drivers/real_time_clock.hpp"
 
-#include "event_processor.hpp"
 
 #define WIFI_SSID ""
 #define WIFI_PASSWORD ""
@@ -46,5 +44,7 @@ public:
     bool init();
     void run();
 };
+
+void process_event_queue(System* clock_system);
 
 #endif // SYSTEM_HPP

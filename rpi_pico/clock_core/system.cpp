@@ -1,5 +1,13 @@
 #include "system.hpp"
 
+// Core 1 main function to handle USB tasks
+void core1_main() {
+    while (true) {
+        tud_task();
+        usb_write();
+    }
+}
+
 System::System()
     : onboard_led(),
       led_1A(6),
@@ -32,8 +40,6 @@ bool System::init()
   // Initialize TinyUSB stack
   board_init();
   tusb_init();
-  // // This is for USB serial input output
-  // stdio_init_all();    
   // Launch core 1 to handle USB in the background
   multicore_launch_core1(core1_main);
 
@@ -89,25 +95,20 @@ bool System::init()
 
 void System::run()
 {
-  this->onboard_led.set_led(false);
-  this->led_1A.set_led(true);
-  sleep_ms(LED_DELAY_MS);
-  this->onboard_led.set_led(true);
-  this->led_1A.set_led(false);
-  sleep_ms(LED_DELAY_MS);
+  while(true)
+  {
+    this->onboard_led.set_led(true);
+    this->led_1A.set_led(true);
+    sleep_ms(LED_DELAY_MS);
+    this->onboard_led.set_led(false);
+    this->led_1A.set_led(false);
+    sleep_ms(LED_DELAY_MS);
 
-  this->OLED_motor.step(256); // Clockwise
-  // this->hour_minute_motor.step(256); // Clockwise
-  // this->date_motor.step(256); // Clockwise
+    this->OLED_motor.step(256); // Clockwise
+    // this->hour_minute_motor.step(256); // Clockwise
+    // this->date_motor.step(256); // Clockwise
 
-  send_to_print_safe("Hello World!\n");
-  process_event_queue(*this);
-}
-
-// Core 1 main function to handle USB tasks
-void core1_main() {
-    while (true) {
-        tud_task();
-        usb_write();
-    }
+    send_to_print_safe("Hello World!\n");
+    process_event_queue(this);
+  }
 }

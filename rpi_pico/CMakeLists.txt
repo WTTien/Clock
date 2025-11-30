@@ -36,20 +36,20 @@ pico_sdk_init()
 # Add executable. Default name is the project name, version 0.1
 
 add_executable(clock
-    clock.cpp
-    on_board_led.cpp
-    led.cpp
-    stepper_motor.cpp
-    gpio_stepper_motor.cpp
-    pcf_stepper_motor.cpp
-    real_time_clock.cpp
-    usb.cpp
-    event_processor.cpp
-    usb_device.c
-    system.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/clock.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/clock_drivers/on_board_led.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/clock_drivers/led.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/clock_drivers/stepper_motor.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/clock_drivers/gpio_stepper_motor.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/clock_drivers/pcf_stepper_motor.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/clock_drivers/real_time_clock.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/clock_services/usb.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/clock_core/event_processor.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/clock_core/system.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/clock_services/config/usb_device.c
 )
 
-target_include_directories(clock PRIVATE ${CMAKE_CURRENT_LIST_DIR}/tinyusb_config)
+target_include_directories(clock PRIVATE ${CMAKE_CURRENT_LIST_DIR}/clock_services/config)
 
 # pull in common dependencies
 target_link_libraries(clock pico_stdlib pico_multicore hardware_i2c tinyusb_device tinyusb_board)

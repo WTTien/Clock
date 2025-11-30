@@ -2,7 +2,7 @@
 
 int main() {
     System system;
-    if (!system.init()) {
+    if (system.init() != PICO_OK) {
         return -1;
     }
     system.run();
