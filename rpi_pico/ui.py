@@ -52,10 +52,14 @@ class PicoWindow(QWidget):
         controls_widget = QWidget()
         controls_layout = QVBoxLayout()
 
+        # Reboot to BOOTSEL Button
+        reboot_button = QPushButton("Reboot to BOOTSEL")
+        reboot_button.clicked.connect(self.reboot_to_bootsel)
+
+        # LED Buttons
         led_controls_layout = QWidget()
         led_buttons_grid = QGridLayout(led_controls_layout)
-
-        # Buttons
+       
         led_buttons = [
             ("1A", 1, 1),
             ("2A", 1, 2),
@@ -77,7 +81,7 @@ class PicoWindow(QWidget):
         # for j in range(1, 3):  # Assuming 2 columns
         #     led_buttons_grid.setColumnStretch(j, 1)
 
-
+        controls_layout.addWidget(reboot_button)
         controls_layout.addWidget(led_controls_layout)
         controls_widget.setLayout(controls_layout)
 
@@ -123,6 +127,14 @@ class PicoWindow(QWidget):
 
         except Exception as e:
             self.append_output(f"Error: {e}")
+
+    def reboot_to_bootsel(self):
+        try:
+            self.serial_thread.ser.write(f"[POWER] PICO : REBOOT\n".encode())
+            self.serial_thread.ser.flush()
+            self.append_output(">>> Rebooting to BOOTSEL mode...")
+        except Exception as e:
+            self.append_output(f"Error communicating with Pico: {e}")
 
     # Callback to update output box
     def append_output(self, text):

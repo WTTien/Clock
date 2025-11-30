@@ -7,7 +7,9 @@
 #include <bsp/board_api.h>
 #include "pico/multicore.h"
 #include "pico/cyw43_arch.h"
+
 #include "../clock_services/usb.hpp"
+#include "../clock_services/wifi.hpp"
 
 #include "hardware/i2c.h"
 

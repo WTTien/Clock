@@ -2,6 +2,7 @@
 #define EVENT_PROCESSOR_HPP
 
 #include "../clock_services/usb.hpp"
+#include "pico/bootrom.h"
 #include <string>
 #include <string_view>
 

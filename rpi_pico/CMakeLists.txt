@@ -44,6 +44,7 @@ add_executable(clock
     ${CMAKE_CURRENT_LIST_DIR}/clock_drivers/pcf_stepper_motor.cpp
     ${CMAKE_CURRENT_LIST_DIR}/clock_drivers/real_time_clock.cpp
     ${CMAKE_CURRENT_LIST_DIR}/clock_services/usb.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/clock_services/wifi.cpp
     ${CMAKE_CURRENT_LIST_DIR}/clock_core/event_processor.cpp
     ${CMAKE_CURRENT_LIST_DIR}/clock_core/system.cpp
     ${CMAKE_CURRENT_LIST_DIR}/clock_services/config/usb_device.c

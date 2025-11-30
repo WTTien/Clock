@@ -73,7 +73,17 @@ void process_event_queue(System* clock_system)
                 } else {
                     send_to_print_safe("Unknown component for LED type!\n");
                 }
-            } else {
+            }
+            else if (user_input.type == "POWER") {
+                if (user_input.comp == "PICO") {
+                    if (user_input.cmd == "REBOOT") {
+                        send_to_print_safe("Rebooting to BOOTSEL.\n");
+                        sleep_ms(100);
+                        reset_usb_boot(0, 0);
+                    }
+                }
+            }
+            else {
                 send_to_print_safe("Unknown user input!\n");
             }
         } else {

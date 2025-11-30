@@ -46,6 +46,14 @@ bool System::init()
   // WiFi
 #ifdef CYW43_WL_GPIO_LED_PIN
   cyw43_arch_init();
+  cyw43_arch_enable_sta_mode();
+  int rc = cyw43_arch_wifi_connect_timeout_ms(
+      WIFI_SSID,
+      WIFI_PASSWORD,
+      CYW43_AUTH_WPA2_AES_PSK,
+      60000
+  );
+  hard_assert(rc == PICO_OK);
 #endif
 
   //////////////////////////////////////////////
@@ -65,7 +73,7 @@ bool System::init()
   //////////////////////////////////
   
   // Onboard LED
-  int rc = this->onboard_led.init();
+  rc = this->onboard_led.init();
   hard_assert(rc == PICO_OK);
 
   // Jellybean LED
@@ -97,18 +105,20 @@ void System::run()
 {
   while(true)
   {
-    this->onboard_led.set_led(true);
-    this->led_1A.set_led(true);
-    sleep_ms(LED_DELAY_MS);
-    this->onboard_led.set_led(false);
-    this->led_1A.set_led(false);
-    sleep_ms(LED_DELAY_MS);
+    // this->onboard_led.set_led(true);
+    // this->led_1A.set_led(true);
+    // sleep_ms(LED_DELAY_MS);
+    // this->onboard_led.set_led(false);
+    // this->led_1A.set_led(false);
+    // sleep_ms(LED_DELAY_MS);
 
-    this->OLED_motor.step(256); // Clockwise
+    // this->OLED_motor.step(256); // Clockwise
     // this->hour_minute_motor.step(256); // Clockwise
     // this->date_motor.step(256); // Clockwise
 
-    send_to_print_safe("Hello World!\n");
+    // send_to_print_safe("Hello World!\n");
+    // display_wifi_status();
     process_event_queue(this);
+    sleep_ms(50);
   }
 }
