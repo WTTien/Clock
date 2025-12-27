@@ -56,6 +56,40 @@ class PicoWindow(QWidget):
         reboot_button = QPushButton("Reboot to BOOTSEL")
         reboot_button.clicked.connect(self.reboot_to_bootsel)
 
+        # RTC Buttons
+        rtc_layout = QWidget()
+        rtc_read_button = QPushButton(f"RTC Read")
+        rtc_read_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Make button fill the grid cell
+        rtc_read_button.clicked.connect(self.rtc_read_button_pressed)
+
+        rtc_set_button = QPushButton(f"RTC Set")
+        rtc_set_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Make button fill the grid cell
+        rtc_set_button.clicked.connect(self.rtc_set_button_pressed)
+
+        rtc_layout.setLayout(QHBoxLayout())
+        rtc_layout.layout().addWidget(rtc_read_button)
+        rtc_layout.layout().addWidget(rtc_set_button)
+
+        # Motor Buttons
+        motor_controls_layout = QWidget()
+        motor_buttons_grid = QGridLayout(motor_controls_layout)
+       
+        motor_buttons = [
+            ("HOUR", 1, 1),
+            ("MINUTE", 1, 2),
+            ("DAYTENTH", 2, 1),
+            ("DAYONES", 2, 2),
+            ("MONTH", 3, 1),
+        ]
+        self.motor_buttons = {} # Dictionary to store button references
+
+        for motor_id, row, col in motor_buttons:
+            button = QPushButton(f"Motor {motor_id}")
+            button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Make button fill the grid cell
+            button.clicked.connect(lambda checked, motor_id=motor_id: self.motor_button_pressed(motor_id))
+            motor_buttons_grid.addWidget(button, row, col)
+            self.motor_buttons[motor_id] = button  # Store reference
+
         # LED Buttons
         led_controls_layout = QWidget()
         led_buttons_grid = QGridLayout(led_controls_layout)
@@ -82,6 +116,8 @@ class PicoWindow(QWidget):
         #     led_buttons_grid.setColumnStretch(j, 1)
 
         controls_layout.addWidget(reboot_button)
+        controls_layout.addWidget(rtc_layout)
+        controls_layout.addWidget(motor_controls_layout)
         controls_layout.addWidget(led_controls_layout)
         controls_widget.setLayout(controls_layout)
 
@@ -92,6 +128,50 @@ class PicoWindow(QWidget):
         self.serial_thread = SerialReader(PORT, BAUDRATE)
         self.serial_thread.new_line.connect(self.append_output)
         self.serial_thread.start()
+
+    def rtc_read_button_pressed(self):
+        try:
+            self.serial_thread.ser.write(f"[RTC] READ : NOW\n".encode())
+            self.serial_thread.ser.flush()
+            self.append_output(">>> Reading RTC time...")
+        except Exception as e:
+            self.append_output(f"Error communicating with Pico: {e}")
+    def rtc_set_button_pressed(self):
+        try:
+            self.serial_thread.ser.write(f"[RTC] SET : NOW\n".encode())
+            self.serial_thread.ser.flush()
+            self.append_output(">>> Setting RTC time...")
+        except Exception as e:
+            self.append_output(f"Error communicating with Pico: {e}")
+
+    def motor_button_pressed(self, motor_id):
+        try:
+            button = self.motor_buttons.get(motor_id)
+            if not button:
+                print(f"No button found for LED {motor_id}")
+                self.append_output(f"Error: No button found for LED {motor_id}")
+                return
+            
+            if motor_id == "HOUR":
+                spin = 256
+            if motor_id == "MINUTE":
+                spin = 2560
+            if motor_id == "DAYTENTH":
+                spin = 256
+            if motor_id == "DAYONES":
+                spin = 256
+            if motor_id == "MONTH":
+                spin = 256
+            try:
+                self.serial_thread.ser.write(f"[MOTOR] {motor_id} : {spin}\n".encode())
+                self.serial_thread.ser.flush()
+                self.append_output(f">>> Spinning MOTOR {motor_id} for {spin} steps.")
+            except Exception as e:
+                self.append_output(f"Error communicating with Pico: {e}")
+                return
+
+        except Exception as e:
+            self.append_output(f"Error: {e}")
 
     def led_button_pressed(self, led_id):
         try:

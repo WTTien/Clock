@@ -11,7 +11,8 @@ void core1_main() {
 System::System()
     : onboard_led(),
       led_1A(6),
-      OLED_motor(26, 22, 21, 20),
+      // OLED_motor(26, 22, 21, 20),
+      OLED_motor(19, 18, 17, 16),
       hour_minute_motor(
           i2c1, // TODO: Find a way to link to clock.cpp definition of I2C_PORT
           0x21, // I2C address
@@ -46,14 +47,14 @@ bool System::init()
   // WiFi
 #ifdef CYW43_WL_GPIO_LED_PIN
   cyw43_arch_init();
-  cyw43_arch_enable_sta_mode();
-  int rc = cyw43_arch_wifi_connect_timeout_ms(
-      WIFI_SSID,
-      WIFI_PASSWORD,
-      CYW43_AUTH_WPA2_AES_PSK,
-      60000
-  );
-  hard_assert(rc == PICO_OK);
+  // cyw43_arch_enable_sta_mode();
+  // int rc = cyw43_arch_wifi_connect_timeout_ms(
+  //     WIFI_SSID,
+  //     WIFI_PASSWORD,
+  //     CYW43_AUTH_WPA2_AES_PSK,
+  //     60000
+  // );
+  // hard_assert(rc == PICO_OK);
 #endif
 
   //////////////////////////////////////////////
@@ -73,13 +74,14 @@ bool System::init()
   //////////////////////////////////
   
   // Onboard LED
-  rc = this->onboard_led.init();
+  int rc = this->onboard_led.init();
   hard_assert(rc == PICO_OK);
+  // this->onboard_led.set_led(true);
 
   // Jellybean LED
   rc = this->led_1A.init();
   hard_assert(rc == PICO_OK);
-
+ 
   // OLED Motor
   rc = this->OLED_motor.init();
   hard_assert(rc == PICO_OK);
@@ -92,9 +94,9 @@ bool System::init()
   rc = this->date_motor.init();
   hard_assert(rc == PICO_OK);
 
-  // Real Time Clock
-  rc = this->rtc.init();
-  hard_assert(rc == PICO_OK);
+  // // Real Time Clock
+  // rc = this->rtc.init();
+  // hard_assert(rc == PICO_OK);
 
   send_to_print_safe("Starting programme!\n");
 

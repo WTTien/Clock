@@ -21,6 +21,8 @@ public:
     RealTimeClock(i2c_inst_t *i2c, uint8_t address, uint8_t reset_pin, uint8_t int_pin);
     bool init();
     bool readTime(struct DateTime &dt);
+    bool setTime(const DateTime &dt);
+
 
 private:
     i2c_inst_t *i2c;

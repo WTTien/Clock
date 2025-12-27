@@ -58,6 +58,26 @@ bool RealTimeClock::readTime(DateTime &dt)
     return true;
 }
 
+bool RealTimeClock::setTime(const DateTime &dt) 
+{
+    uint8_t data[8];
+    data[0] = DS3231_REG_TIME; // Start writing at the time register
+    data[1] = decToBcd(dt.second);
+    data[2] = decToBcd(dt.minute);
+    data[3] = decToBcd(dt.hour); // 24-hour mode
+    data[4] = decToBcd(dt.day);  // Day of the week
+    data[5] = decToBcd(dt.date);
+    data[6] = decToBcd(dt.month);
+    data[7] = decToBcd(dt.year - 2000); // Store only the last 2 digits of the year
+
+    // Write the data to the DS3231
+    if (i2c_write_blocking(i2c, address, data, 8, false) < 0) {
+        return false; // Write failed
+    }
+
+    return true; // Write successful
+}
+
 uint8_t RealTimeClock::bcdToDec(uint8_t val) 
 {
     return (val / 16 * 10) + (val % 16);
