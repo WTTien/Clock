@@ -27,11 +27,51 @@ bool RealTimeClock::init()
     gpio_init(int_pin);
     gpio_set_dir(int_pin, GPIO_IN);
     gpio_pull_up(int_pin); // Enable pull-up resistor
+    gpio_set_irq_enabled_with_callback(int_pin, GPIO_IRQ_EDGE_FALL, true, &rtc_interrupt_handler);
 
-    // Optionally test communication
-    uint8_t reg = DS3231_REG_TIME;
-    if (i2c_write_blocking(i2c, address, &reg, 1, true) < 0)
-        return false;
+    // Set Minute Interrupt
+    uint8_t data[4];
+    data[0] = 0x0B; // Alarm 2 register address (minutes, hours, day/date)
+    data[1] = 0x80; // Mask minutes (A2M2 = 1, match every minute)
+    data[2] = 0x80; // Mask hours (A2M3 = 1, match every hour)
+    data[3] = 0x80; // Mask day/date (A2M4 = 1, match every day)
+
+    // Write to Alarm 2 registers
+    if (i2c_write_blocking(i2c, address, data, 4, false) < 0) {
+        return false; // Write failed
+    }
+
+    // Enable Alarm 2 interrupt
+    uint8_t control_reg = 0x0E; // Control register address
+    uint8_t control_val;
+    // Read the current control register value
+    if (!this->readRegister(control_reg, control_val, 1)) {
+        return false; // Read failed
+    }
+    // Set the A2IE (Alarm 2 Interrupt Enable) bit
+    control_val |= 0x06;
+    // Write back the updated control register value
+    if (!this->writeRegister(control_reg, &control_val, 1)) {
+        return false; // Write failed
+    }
+
+    uint8_t status_reg = 0x0F; // Status register address
+    uint8_t status_val;
+    // Read the current status register value
+    if (!this->readRegister(status_reg, status_val, 1)) {
+        return false; // Read failed
+    }
+    // Clear A2F (Alarm 2 Flag) bit
+    status_val &= ~0x02;
+    // Write back the updated status register value
+    if (!this->writeRegister(status_reg, &status_val, 1)) {
+        return false; // Write failed
+    }
+
+    // // Optionally test communication
+    // uint8_t reg = DS3231_REG_TIME;
+    // if (i2c_write_blocking(i2c, address, &reg, 1, true) < 0)
+    //     return false;
 
     return PICO_OK;
 }
@@ -86,4 +126,52 @@ uint8_t RealTimeClock::bcdToDec(uint8_t val)
 uint8_t RealTimeClock::decToBcd(uint8_t val) 
 {
     return (val / 10 * 16) + (val % 10);
+}
+
+bool RealTimeClock::readRegister(uint8_t reg, uint8_t &value, size_t length) 
+{
+    if (i2c_write_blocking(i2c, address, &reg, 1, true) < 0)
+        return false;
+
+    if (i2c_read_blocking(i2c, address, &value, length, false) < 0)
+        return false;
+
+    return true;
+}
+
+bool RealTimeClock::writeRegister(uint8_t reg, const uint8_t *value, size_t length) 
+{
+    uint8_t data[length+1];
+    data[0] = reg;
+
+    for (size_t i = 0; i < length; i++) {
+        data[i + 1] = value[i];
+    }
+
+    if (i2c_write_blocking(i2c, address, data, length + 1, false) < 0)
+        return false;
+
+    return true;
+}
+
+void rtc_interrupt_handler(uint gpio, uint32_t events) {
+    // Handle RTC interrupt (e.g., read time, clear alarm flag, etc.)
+    send_to_print_safe("RTC interrupt triggered: Logging motor spin event.\n");
+    char event_msg[64] = "[RTC] INT: NOW\n";
+    push_string_into_event_queue(event_msg);
+
+    // Clear the RTC alarm flag
+    uint8_t status_reg = 0x0F; // Status register address
+    uint8_t status_val;
+
+    // Read the current status register value
+    if (i2c_write_blocking(i2c1, 0x68, &status_reg, 1, true) >= 0 &&
+        i2c_read_blocking(i2c1, 0x68, &status_val, 1, false) >= 0) {
+        // Clear the A2F (Alarm 2 Flag) bit
+        status_val &= ~0x02;
+
+        // Write back the updated status register value
+        uint8_t data[2] = {status_reg, status_val};
+        i2c_write_blocking(i2c1, 0x68, data, 2, false);
+    }
 }

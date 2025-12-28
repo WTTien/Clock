@@ -25,4 +25,6 @@ extern volatile uint32_t event_q_tail;
 bool pop_string_from_event_queue(char* out); //This function is used to get the next event string from event_queue.
 void tud_cdc_rx_cb(uint8_t itf);
 
+bool push_string_into_event_queue(const char* msg);
+
 #endif // USB_HPP

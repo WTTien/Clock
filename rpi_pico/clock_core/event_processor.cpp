@@ -86,7 +86,7 @@ void process_event_queue(System* clock_system)
                     if (steps = std::stoi(std::string(user_input.cmd))) {
                         send_to_print_safe("Spinning minute for ... step");
                         clock_system->hour_minute_motor.step(steps);
-                        clock_system->OLED_motor.step(steps);
+                        clock_system->hour_motor.step(steps);
                         clock_system->date_motor.step(steps);
                     }
                 }
@@ -138,6 +138,18 @@ void process_event_queue(System* clock_system)
                         } else {
                             send_to_print_safe("Failed to set time from RTC!\n");
                         }
+                    }
+                }
+                else if (user_input.comp == "INT") {
+                    if (user_input.cmd == "NOW") {
+                        DateTime dt;
+                        clock_system->rtc.readTime(dt);
+
+                        uint32_t move_minute = dt.minute - (clock_system->state_.curr_minute % 60);
+                        clock_system->move_minutes(move_minute);
+
+                        uint32_t move_hour = (dt.hour * 60) - (clock_system->state_.curr_hour % 720) + move_minute;
+                        clock_system->move_hours(move_hour);
                     }
                 }
             }
