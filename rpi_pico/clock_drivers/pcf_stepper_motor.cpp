@@ -56,10 +56,11 @@ void PCF8574StepperMotor::applyOutput(uint8_t output) {
     
     // TODO: Delete after
     if (ret < 0) {
-        // send_to_print_safe("[PCF8574StepperMotor]: Write failed — no device or NACK\n");
-    } else {
-        send_to_print_safe("Write succeeded\n");
+        send_to_print_safe("[PCF8574StepperMotor]: Write failed — no device or NACK\n");
     } 
+    // else {
+    //     send_to_print_safe("Write succeeded\n");
+    // } 
 }
 
 
@@ -109,8 +110,9 @@ void PCF8575StepperMotor::applyOutput(uint8_t output) {
 
     // TODO: Delete after
     if (ret < 0) {
-        // send_to_print_safe("[PCF8575StepperMotor]: Write failed — no device or NACK\n");
-    } else {
-        send_to_print_safe("Write succeeded\n");
+        send_to_print_safe("[PCF8575StepperMotor]: Write failed — no device or NACK\n");
     } 
+    // else {
+    //     send_to_print_safe("Write succeeded\n");
+    // } 
 }

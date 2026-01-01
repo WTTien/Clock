@@ -42,11 +42,11 @@ struct ClockState {
     uint32_t curr_hour_steps; //0-4075
 
     uint8_t curr_minute; //0-59
-    uint16_t curr_hour; //0-720 (Increment every minute by 1, reset after 12 hours)
+    uint16_t curr_hour; //0-1440 (Increment every minute by 1, reset after 24 hours)
 
     uint8_t curr_date_ones; //0-9
     uint8_t curr_date_tens; //0-3
-    uint8_t curr_month; //0-11
+    uint8_t curr_month; //1-12
 };
 
 class System {
@@ -57,14 +57,19 @@ public:
     LED led_1A;
     GPIOStepperMotor hour_motor;
     GPIOStepperMotor minute_motor;
-    PCF8574StepperMotor hour_minute_motor;
-    PCF8575StepperMotor date_motor;
+    PCF8575StepperMotor date_tenth_motor;
+    PCF8575StepperMotor date_ones_motor;
+    PCF8575StepperMotor month_motor;
+    PCF8574StepperMotor date_motor;
     RealTimeClock rtc;
 
     bool init();
     void run();
     void move_minutes(uint8_t minutes);
     void move_hours(uint16_t hours);
+    void move_date_tens(int8_t tens);
+    void move_date_ones(int8_t ones);
+    void move_months(int8_t months);
 
     ClockState state_{};
 };

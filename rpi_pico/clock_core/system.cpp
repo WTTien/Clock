@@ -11,16 +11,26 @@ void core1_main() {
 System::System()
     : onboard_led(),
       led_1A(6),
-      hour_motor(19, 18, 17, 16),
-      minute_motor(26, 22, 21, 20),
-      hour_minute_motor(
+      hour_motor(20, 21, 22, 26),
+      minute_motor(16, 17, 18, 19),
+      date_tenth_motor(
           i2c1, // TODO: Find a way to link to clock.cpp definition of I2C_PORT
-          0x21, // I2C address
+          0x20, // I2C address
           0, 1, 2, 3 // Pins on the expander
+      ),
+      date_ones_motor(
+          i2c1, // TODO: Find a way to link to clock.cpp definition of I2C_PORT
+          0x20, // I2C address
+          4, 5, 6, 7 // Pins on the expander
+      ),
+      month_motor(
+          i2c1, // TODO: Find a way to link to clock.cpp definition of I2C_PORT
+          0x20, // I2C address
+          8, 9, 10, 11 // Pins on the expander
       ),
       date_motor(
           i2c1, // TODO: Find a way to link to clock.cpp definition of I2C_PORT
-          0x20, // I2C address
+          0x21, // I2C address
           0, 1, 2, 3 // Pins on the expander
       ),
       rtc(
@@ -29,7 +39,15 @@ System::System()
         12,   // Reset pin
         13    // Interrupt pin
       )
-{}
+{
+  state_.curr_minute_steps = 0;
+  state_.curr_hour_steps = 0;
+  state_.curr_minute = 0;
+  state_.curr_hour = 0;
+  state_.curr_date_ones = 0;
+  state_.curr_date_tens = 3;
+  state_.curr_month = 12;
+}
 
 bool System::init()
 {
@@ -85,20 +103,34 @@ bool System::init()
   // Hour Motor
   rc = this->hour_motor.init();
   hard_assert(rc == PICO_OK);
+  this->hour_motor.setDirection(true);
 
   // Minute Motor
   rc = this->minute_motor.init();
   hard_assert(rc == PICO_OK);
+  this->minute_motor.setDirection(false);
 
-  // hour_minute_motor
-  rc = this->hour_minute_motor.init();
+  // Date Tenth Motor
+  rc = this->date_tenth_motor.init();
   hard_assert(rc == PICO_OK);
+  this->date_tenth_motor.setDirection(false);
 
-  // date_motor
+  // Date Ones Motor
+  rc = this->date_ones_motor.init();
+  hard_assert(rc == PICO_OK);
+  this->date_ones_motor.setDirection(true);
+
+  // Month Motor
+  rc = this->month_motor.init();
+  hard_assert(rc == PICO_OK);
+  this->month_motor.setDirection(false);
+
+  // Date Motor
   rc = this->date_motor.init();
   hard_assert(rc == PICO_OK);
+  this->date_motor.setDirection(true);
 
-  // // Real Time Clock
+  // Real Time Clock
   rc = this->rtc.init();
   hard_assert(rc == PICO_OK);
 
@@ -190,4 +222,34 @@ void System::move_hours(uint16_t hour_units)
   this->hour_motor.step(hour_steps);
   this->state_.curr_hour_steps = (this->state_.curr_hour_steps + hour_steps) % HOUR_STEPS_PER_REV;
   this->state_.curr_hour = this->state_.curr_hour + hour_units;
+}
+
+void System::move_date_tens(int8_t tens)
+{
+  tens = tens % 4; // Only 0-3 valid
+
+  uint32_t steps = tens * 1223; // 1223 steps per tens increment
+
+  this->date_tenth_motor.step(steps);
+  this->state_.curr_date_tens = (this->state_.curr_date_tens + tens) % 4;
+}
+
+void System::move_date_ones(int8_t ones)
+{
+  ones = ones % 10; // Only 0-9 valid
+
+  uint32_t steps = ones * 1223; // 1223 steps per ones increment
+
+  this->date_ones_motor.step(steps);
+  this->state_.curr_date_ones = (this->state_.curr_date_ones + ones) % 10;
+}
+
+void System::move_months(int8_t months)
+{
+  months = months % 12; // Only 0-11 valid
+
+  uint32_t steps = months * 682; // 682 steps per month increment
+
+  this->month_motor.step(steps);
+  this->state_.curr_month = (this->state_.curr_month + months) % 12;
 }

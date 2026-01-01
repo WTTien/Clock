@@ -2,6 +2,7 @@
 #define STEPPER_MOTOR_HPP
 
 #include "pico/stdlib.h"
+#include <cstdlib>
 
 class StepperMotor {
 public:
@@ -22,7 +23,8 @@ protected:
     bool direction = true; // true for CW, false for CCW
     uint32_t step_delay_ms = 5; // Default delay between steps
     virtual void applyOutput(uint8_t output) = 0;
-    void singleStep();
+    void singleForwardStep();
+    void singleBackwardStep();
 };
 
 #endif // STEPPER_MOTOR_HPP

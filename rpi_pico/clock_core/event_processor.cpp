@@ -85,12 +85,12 @@ void process_event_queue(System* clock_system)
                     int steps;
                     if (steps = std::stoi(std::string(user_input.cmd))) {
                         send_to_print_safe("Spinning minute for ... step");
-                        clock_system->hour_minute_motor.step(steps);
+                        // clock_system->hour_minute_motor.step(steps);
                         clock_system->hour_motor.step(steps);
                         clock_system->date_motor.step(steps);
                     }
                 }
-                if (user_input.comp == "HOUR") {
+                else if (user_input.comp == "HOUR") {
                     uint8_t data = 0x01;
                     int ret = i2c_write_blocking(i2c1, 0x21, &data, 1, false);
                     if (ret < 0) {
@@ -106,6 +106,15 @@ void process_event_queue(System* clock_system)
                     } else {
                         send_to_print_safe("Write succeeded\n");
                     } 
+                }
+                else if (user_input.comp == "DAYTENTH") {
+                    clock_system->date_tenth_motor.step(1223);
+                }
+                else if (user_input.comp == "DAYONES") {
+                    clock_system->date_ones_motor.step(1223);
+                }
+                else if (user_input.comp == "MONTH") {
+                    clock_system->month_motor.step(682);
                 }
             }
 
@@ -144,12 +153,36 @@ void process_event_queue(System* clock_system)
                     if (user_input.cmd == "NOW") {
                         DateTime dt;
                         clock_system->rtc.readTime(dt);
+                        
+                        snprintf(event_msg, sizeof(event_msg), "RTC Interrupt: Time %02d:%02d:%02d, Date %02d/%02d/%04d\n",
+                                    dt.hour, dt.minute, dt.second, dt.date, dt.month, dt.year);
+                        send_to_print_safe(event_msg);
 
-                        uint32_t move_minute = dt.minute - (clock_system->state_.curr_minute % 60);
+                        uint8_t move_minute = dt.minute - (clock_system->state_.curr_minute % 60);
+                        snprintf(event_msg, sizeof(event_msg), "Moving minutes by %d\n", move_minute);
+                        send_to_print_safe(event_msg);
                         clock_system->move_minutes(move_minute);
 
-                        uint32_t move_hour = (dt.hour * 60) - (clock_system->state_.curr_hour % 720) + move_minute;
+                        uint16_t move_hour = (dt.hour * 60 + dt.minute) - (clock_system->state_.curr_hour % 1440);
+                        snprintf(event_msg, sizeof(event_msg), "Moving hours by %d\n", move_hour);
+                        send_to_print_safe(event_msg);
+                        send_to_print_safe("-----\n");
                         clock_system->move_hours(move_hour);
+
+                        int8_t move_date_tens = (dt.date / 10) - (clock_system->state_.curr_date_tens % 4);
+                        snprintf(event_msg, sizeof(event_msg), "Moving date tens by %d\n", move_date_tens);
+                        send_to_print_safe(event_msg);
+                        clock_system->move_date_tens(move_date_tens);
+
+                        int8_t move_date_ones = (dt.date % 10) - (clock_system->state_.curr_date_ones % 10);
+                        snprintf(event_msg, sizeof(event_msg), "Moving date ones by %d\n", move_date_ones);
+                        send_to_print_safe(event_msg);
+                        clock_system->move_date_ones(move_date_ones);
+
+                        int8_t move_month = dt.month - (clock_system->state_.curr_month % 12);
+                        snprintf(event_msg, sizeof(event_msg), "Moving month by %d\n", move_month);
+                        send_to_print_safe(event_msg);
+                        clock_system->move_months(move_month);
                     }
                 }
             }
