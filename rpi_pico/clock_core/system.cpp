@@ -28,11 +28,11 @@ System::System()
           0x20, // I2C address
           8, 9, 10, 11 // Pins on the expander
       ),
-      date_motor(
-          i2c1, // TODO: Find a way to link to clock.cpp definition of I2C_PORT
-          0x21, // I2C address
-          0, 1, 2, 3 // Pins on the expander
-      ),
+      // date_motor(
+      //     i2c1, // TODO: Find a way to link to clock.cpp definition of I2C_PORT
+      //     0x21, // I2C address
+      //     0, 1, 2, 3 // Pins on the expander
+      // ),
       rtc(
         i2c1, // TODO: Find a way to link to clock.cpp definition of I2C_PORT
         0x68, // I2C address
@@ -45,7 +45,7 @@ System::System()
   state_.curr_minute = 0;
   state_.curr_hour = 0;
   state_.curr_date_ones = 0;
-  state_.curr_date_tens = 3;
+  state_.curr_date_tens = 0;
   state_.curr_month = 12;
 }
 
@@ -125,16 +125,21 @@ bool System::init()
   hard_assert(rc == PICO_OK);
   this->month_motor.setDirection(false);
 
-  // Date Motor
-  rc = this->date_motor.init();
-  hard_assert(rc == PICO_OK);
-  this->date_motor.setDirection(true);
+  // // Date Motor
+  // rc = this->date_motor.init();
+  // hard_assert(rc == PICO_OK);
+  // this->date_motor.setDirection(true);
 
   // Real Time Clock
   rc = this->rtc.init();
   hard_assert(rc == PICO_OK);
 
   send_to_print_safe("Starting programme!\n");
+
+  /// TEST UTILITIES ///
+  // this->test_minute = 0;
+  // this->test_hour = 0;
+  /// TEST UTILITIES ///
 
   return PICO_OK;
 }
@@ -143,6 +148,7 @@ void System::run()
 {
   while(true)
   {
+    /// ONE DAY THESE WILL BE GONE ///
     // this->onboard_led.set_led(true);
     // this->led_1A.set_led(true);
     // sleep_ms(LED_DELAY_MS);
@@ -156,27 +162,20 @@ void System::run()
 
     // send_to_print_safe("Hello World!\n");
     // display_wifi_status();
+    /// ONE DAY THESE WILL BE GONE ///
+    
+    /// TEST UTILITIES ///
+    // this->test_minute = (this->test_minute + 1) % 60;
+    // if (this->test_minute == 0) {
+    //     this->test_hour = (this->test_hour + 1) % 24;
+    // }
+    // this->set_test_minute_hour(this->test_minute, this->test_hour);
+    // char event_msg[64] = "[TEST] RTC_INT: MINUTE_HOUR\n";
+    // push_string_into_event_queue(event_msg);
+    /// TEST UTILITIES ///
+
     process_event_queue(this);
-    sleep_ms(50);
-
-    // uint8_t control_reg = 0x0E; // Control register address
-    // uint8_t control_val;
-    // uint8_t status_reg = 0x0F; // Status register address
-    // uint8_t status_val;
-
-    // i2c_write_blocking(i2c1, 0x68, &control_reg, 1, true);
-    // i2c_read_blocking(i2c1, 0x68, &control_val, 1, false);
-
-    // i2c_write_blocking(i2c1, 0x68, &status_reg, 1, true);
-    // i2c_read_blocking(i2c1, 0x68, &status_val, 1, false);
-
-    // char control_reg_print[64];
-    // snprintf(control_reg_print, sizeof(control_reg_print), "Control Register (0x0E): 0x%02X\n", control_val);
-    // send_to_print_safe(control_reg_print);
-
-    // char status_reg_print[64];
-    // snprintf(status_reg_print, sizeof(status_reg_print), "Status Register (0x0F): 0x%02X\n", status_val);
-    // send_to_print_safe(status_reg_print);
+    sleep_ms(1500);
   }
 }
 
@@ -202,7 +201,10 @@ void System::move_minutes(uint8_t minutes)
   
   this->minute_motor.step(minute_steps);
   this->state_.curr_minute_steps = (this->state_.curr_minute_steps + minute_steps) % MINUTE_STEPS_PER_REV;
-  this->state_.curr_minute = this->state_.curr_minute + minutes;
+  this->state_.curr_minute = (this->state_.curr_minute + minutes) % 60;
+  // char state_msg[64];
+  // snprintf(state_msg, sizeof(state_msg), "Current minute set to %d\n", this->state_.curr_minute);
+  // send_to_print_safe(state_msg);
 }
 
 void System::move_hours(uint16_t hour_units)
@@ -221,35 +223,66 @@ void System::move_hours(uint16_t hour_units)
 
   this->hour_motor.step(hour_steps);
   this->state_.curr_hour_steps = (this->state_.curr_hour_steps + hour_steps) % HOUR_STEPS_PER_REV;
-  this->state_.curr_hour = this->state_.curr_hour + hour_units;
+  this->state_.curr_hour = (this->state_.curr_hour + hour_units) % 720;
+  // char state_msg[64];
+  // snprintf(state_msg, sizeof(state_msg), "Current hour set to %d\n", this->state_.curr_hour);
+  // send_to_print_safe(state_msg);
 }
 
-void System::move_date_tens(int8_t tens)
+void System::move_date_tens(int8_t date_tens)
 {
-  tens = tens % 4; // Only 0-3 valid
+  date_tens = date_tens % 4; // Only 0-3 valid
 
-  uint32_t steps = tens * 1223; // 1223 steps per tens increment
+  uint32_t date_tens_steps = date_tens * DATE_TENS_STEPS; // 1223 steps per tens increment
 
-  this->date_tenth_motor.step(steps);
-  this->state_.curr_date_tens = (this->state_.curr_date_tens + tens) % 4;
+  this->date_tenth_motor.step(date_tens_steps);
+  this->state_.curr_date_tens = (this->state_.curr_date_tens + date_tens) % 4;
+  // char state_msg[64];
+  // snprintf(state_msg, sizeof(state_msg), "Current date_tenth set to %d\n", this->state_.curr_date_tens);
+  // send_to_print_safe(state_msg);
 }
 
-void System::move_date_ones(int8_t ones)
+void System::move_date_ones(int8_t date_ones)
 {
-  ones = ones % 10; // Only 0-9 valid
+  date_ones = date_ones % 10; // Only 0-9 valid
 
-  uint32_t steps = ones * 1223; // 1223 steps per ones increment
+  uint32_t date_ones_steps = date_ones * DATE_ONES_STEPS; // 1223 steps per ones increment
 
-  this->date_ones_motor.step(steps);
-  this->state_.curr_date_ones = (this->state_.curr_date_ones + ones) % 10;
+  this->date_ones_motor.step(date_ones_steps);
+  this->state_.curr_date_ones = (this->state_.curr_date_ones + date_ones) % 10;
+  // char state_msg[64];
+  // snprintf(state_msg, sizeof(state_msg), "Current date_ones set to %d\n", this->state_.curr_date_ones);
+  // send_to_print_safe(state_msg);
 }
 
 void System::move_months(int8_t months)
 {
   months = months % 12; // Only 0-11 valid
 
-  uint32_t steps = months * 682; // 682 steps per month increment
+  uint32_t month_steps = months * MONTH_STEPS; // 682 steps per month increment
 
-  this->month_motor.step(steps);
+  this->month_motor.step(month_steps);
   this->state_.curr_month = (this->state_.curr_month + months) % 12;
+  // char state_msg[64];
+  // snprintf(state_msg, sizeof(state_msg), "Current month set to %d\n", this->state_.curr_month);
+  // send_to_print_safe(state_msg);
 }
+
+
+/// TEST UTILITIES ///
+void System::set_test_minute_hour(uint8_t minutes, uint8_t hours)
+{
+    this->test_minute = minutes;
+    this->test_hour = hours;
+}
+
+uint8_t System::get_test_minute()
+{
+    return this->test_minute;
+}
+
+uint8_t System::get_test_hour()
+{
+    return this->test_hour;
+}
+/// TEST UTILITIES ///

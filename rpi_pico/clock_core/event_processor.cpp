@@ -55,7 +55,8 @@ void process_event_queue(System* clock_system)
 {
     char event_msg[EVENT_MSG_SIZE];
     if (pop_string_from_event_queue(event_msg)) {
-        
+        // send_to_print_safe("Processing event: ");
+        // send_to_print_safe(event_msg);
         std::string_view msg(event_msg);
         UserInput user_input;
 
@@ -81,40 +82,41 @@ void process_event_queue(System* clock_system)
             }
 
             else if (user_input.type == "MOTOR"){
-                if (user_input.comp == "MINUTE") {
-                    int steps;
-                    if (steps = std::stoi(std::string(user_input.cmd))) {
-                        send_to_print_safe("Spinning minute for ... step");
-                        // clock_system->hour_minute_motor.step(steps);
-                        clock_system->hour_motor.step(steps);
-                        clock_system->date_motor.step(steps);
+                int steps;
+                if (steps = std::stoi(std::string(user_input.cmd))) {
+
+                    char spin_msg[64];
+
+                    // A minute spins minute_motor about 135-136 steps
+                    if (user_input.comp == "MINUTE") {
+                        snprintf(spin_msg, sizeof(spin_msg), "Spinning minute for %d steps", steps);
+                        send_to_print_safe(spin_msg);
+                        clock_system->minute_motor.step(steps);
                     }
-                }
-                else if (user_input.comp == "HOUR") {
-                    uint8_t data = 0x01;
-                    int ret = i2c_write_blocking(i2c1, 0x21, &data, 1, false);
-                    if (ret < 0) {
-                        // send_to_print_safe("[PCF8574StepperMotor]: Write failed — no device or NACK\n");
-                    } else {
-                        send_to_print_safe("Write succeeded\n");
-                    } 
-                    
-                    data = 0x0001;
-                    ret = i2c_write_blocking(i2c1, 0x20, &data, 1, false);
-                    if (ret < 0) {
-                        // send_to_print_safe("[PCF8574StepperMotor]: Write failed — no device or NACK\n");
-                    } else {
-                        send_to_print_safe("Write succeeded\n");
-                    } 
-                }
-                else if (user_input.comp == "DAYTENTH") {
-                    clock_system->date_tenth_motor.step(1223);
-                }
-                else if (user_input.comp == "DAYONES") {
-                    clock_system->date_ones_motor.step(1223);
-                }
-                else if (user_input.comp == "MONTH") {
-                    clock_system->month_motor.step(682);
+                    // An hour spins hour_motor about 339-340 steps, a minute spins hour_motor about 5-6 steps
+                    else if (user_input.comp == "HOUR") {
+                        snprintf(spin_msg, sizeof(spin_msg), "Spinning hour for %d steps", steps);
+                        send_to_print_safe(spin_msg);
+                        clock_system->hour_motor.step(steps);
+                    }
+                    // A date tenth increase spins date_tenth_motor about 1223 steps
+                    else if (user_input.comp == "DAYTENTH") {
+                        snprintf(spin_msg, sizeof(spin_msg), "Spinning day tenths for %d steps", steps);
+                        send_to_print_safe(spin_msg);
+                        clock_system->date_tenth_motor.step(steps);
+                    }
+                    // A date ones increase spins date_ones_motor about 1223 steps
+                    else if (user_input.comp == "DAYONES") {
+                        snprintf(spin_msg, sizeof(spin_msg), "Spinning day ones for %d steps", steps);
+                        send_to_print_safe(spin_msg);
+                        clock_system->date_ones_motor.step(steps);
+                    }
+                    // A month increase spins month_motor about 682 steps
+                    else if (user_input.comp == "MONTH") {
+                        snprintf(spin_msg, sizeof(spin_msg), "Spinning month for %d steps", steps);
+                        send_to_print_safe(spin_msg);
+                        clock_system->month_motor.step(steps);
+                    }
                 }
             }
 
@@ -149,6 +151,8 @@ void process_event_queue(System* clock_system)
                         }
                     }
                 }
+                
+                // NOTE: MAIN OPERATION!
                 else if (user_input.comp == "INT") {
                     if (user_input.cmd == "NOW") {
                         DateTime dt;
@@ -158,31 +162,57 @@ void process_event_queue(System* clock_system)
                                     dt.hour, dt.minute, dt.second, dt.date, dt.month, dt.year);
                         send_to_print_safe(event_msg);
 
-                        uint8_t move_minute = dt.minute - (clock_system->state_.curr_minute % 60);
-                        snprintf(event_msg, sizeof(event_msg), "Moving minutes by %d\n", move_minute);
-                        send_to_print_safe(event_msg);
+                        int8_t move_minute = (dt.minute - (clock_system->state_.curr_minute % 60) + 60) % 60;
+                        // snprintf(event_msg, sizeof(event_msg), "Moving minutes by %d\n", move_minute);
+                        // send_to_print_safe(event_msg);
                         clock_system->move_minutes(move_minute);
-
-                        uint16_t move_hour = (dt.hour * 60 + dt.minute) - (clock_system->state_.curr_hour % 1440);
-                        snprintf(event_msg, sizeof(event_msg), "Moving hours by %d\n", move_hour);
-                        send_to_print_safe(event_msg);
-                        send_to_print_safe("-----\n");
+                        
+                        uint8_t hour_adjusted = dt.hour % 12; // Convert to 12-hour format
+                        int16_t move_hour = ((hour_adjusted * 60 + dt.minute) - (clock_system->state_.curr_hour % 720) + 720) % 720;
+                        // snprintf(event_msg, sizeof(event_msg), "Moving hours by %d\n", move_hour);
+                        // send_to_print_safe(event_msg);
                         clock_system->move_hours(move_hour);
 
                         int8_t move_date_tens = (dt.date / 10) - (clock_system->state_.curr_date_tens % 4);
-                        snprintf(event_msg, sizeof(event_msg), "Moving date tens by %d\n", move_date_tens);
-                        send_to_print_safe(event_msg);
+                        // snprintf(event_msg, sizeof(event_msg), "Moving date tens by %d\n", move_date_tens);
+                        // send_to_print_safe(event_msg);
                         clock_system->move_date_tens(move_date_tens);
 
                         int8_t move_date_ones = (dt.date % 10) - (clock_system->state_.curr_date_ones % 10);
-                        snprintf(event_msg, sizeof(event_msg), "Moving date ones by %d\n", move_date_ones);
-                        send_to_print_safe(event_msg);
+                        // snprintf(event_msg, sizeof(event_msg), "Moving date ones by %d\n", move_date_ones);
+                        // send_to_print_safe(event_msg);
                         clock_system->move_date_ones(move_date_ones);
 
-                        int8_t move_month = dt.month - (clock_system->state_.curr_month % 12);
-                        snprintf(event_msg, sizeof(event_msg), "Moving month by %d\n", move_month);
-                        send_to_print_safe(event_msg);
+                        int8_t move_month = (dt.month - (clock_system->state_.curr_month % 12) + 12) % 12;
+                        // snprintf(event_msg, sizeof(event_msg), "Moving month by %d\n", move_month);
+                        // send_to_print_safe(event_msg);
                         clock_system->move_months(move_month);
+                    }
+                }
+            }
+
+            else if (user_input.type == "TEST") {
+                if (user_input.comp == "RTC_INT") {
+                    if (user_input.cmd == "MINUTE_HOUR") {
+                        uint8_t min_now = clock_system->get_test_minute();
+                        uint8_t hour_now = clock_system->get_test_hour();
+
+                        snprintf(event_msg, sizeof(event_msg), "RTC Interrupt TEST: Time %02d:%02d\n",
+                                    hour_now, min_now);
+                        send_to_print_safe(event_msg);
+
+                        int8_t move_minute = (min_now - (clock_system->state_.curr_minute % 60) + 60) % 60;
+                        snprintf(event_msg, sizeof(event_msg), "Moving minutes by %d\n", move_minute);
+                        send_to_print_safe(event_msg);
+                        clock_system->move_minutes(move_minute);
+                        
+                        uint8_t hour_adjusted = hour_now % 12; // Convert to 12-hour format
+                        int16_t move_hour = ((hour_adjusted * 60 + min_now) - (clock_system->state_.curr_hour % 720) + 720) % 720;
+                        snprintf(event_msg, sizeof(event_msg), "Moving hours by %d\n", move_hour);
+                        send_to_print_safe(event_msg);
+                        clock_system->move_hours(move_hour);
+
+                        send_to_print_safe("---TEST---\n");
                     }
                 }
             }
@@ -196,6 +226,7 @@ void process_event_queue(System* clock_system)
                     }
                 }
             }
+
             else {
                 send_to_print_safe("Unknown user input!\n");
             }

@@ -37,12 +37,16 @@
 #define MINUTE_STEPS_PER_REV 8152
 #define HOUR_STEPS_PER_REV 4076
 
+#define DATE_TENS_STEPS 1223
+#define DATE_ONES_STEPS 1223
+#define MONTH_STEPS 682
+
 struct ClockState {
     uint32_t curr_minute_steps; //0-8151
     uint32_t curr_hour_steps; //0-4075
 
     uint8_t curr_minute; //0-59
-    uint16_t curr_hour; //0-1440 (Increment every minute by 1, reset after 24 hours)
+    uint16_t curr_hour; //0-719 (Increment every minute by 1, reset after 12 hours)
 
     uint8_t curr_date_ones; //0-9
     uint8_t curr_date_tens; //0-3
@@ -60,7 +64,7 @@ public:
     PCF8575StepperMotor date_tenth_motor;
     PCF8575StepperMotor date_ones_motor;
     PCF8575StepperMotor month_motor;
-    PCF8574StepperMotor date_motor;
+    // PCF8574StepperMotor date_motor;
     RealTimeClock rtc;
 
     bool init();
@@ -72,6 +76,16 @@ public:
     void move_months(int8_t months);
 
     ClockState state_{};
+    
+    
+    /// TEST UTILITIES ///
+    uint8_t test_minute = 0;
+    uint8_t test_hour = 0;
+    void set_test_minute_hour(uint8_t minutes, uint8_t hours);
+    uint8_t get_test_minute();
+    uint8_t get_test_hour();
+    /// TEST UTILITIES ///
+
 };
 
 void process_event_queue(System* clock_system);
