@@ -11,6 +11,11 @@ void core1_main() {
 System::System()
     : onboard_led(),
       led_1A(6),
+      led_2A(7), // TODO: update!
+      led_1B(8), // TODO: update!
+      led_2B(9), // TODO: update!
+      led_1C(10), // TODO: update!
+      led_2C(11), // TODO: update!
       hour_motor(20, 21, 22, 26),
       minute_motor(16, 17, 18, 19),
       date_tenth_motor(
@@ -99,6 +104,21 @@ bool System::init()
   // Jellybean LED
   rc = this->led_1A.init();
   hard_assert(rc == PICO_OK);
+
+  rc = this->led_2A.init();
+  hard_assert(rc == PICO_OK);
+
+  rc = this->led_1B.init();
+  hard_assert(rc == PICO_OK);
+
+  rc = this->led_2B.init();
+  hard_assert(rc == PICO_OK);
+
+  rc = this->led_1C.init();
+  hard_assert(rc == PICO_OK);
+
+  rc = this->led_2C.init();
+  hard_assert(rc == PICO_OK);
  
   // Hour Motor
   rc = this->hour_motor.init();
@@ -179,20 +199,22 @@ void System::run()
   }
 }
 
-void System::move_minutes(uint8_t minutes)
+void System::set_to_minute(uint8_t minute)
 {
+  int8_t move_minute = (minute - (this->state_.curr_minute % 60) + 60) % 60;
+  // snprintf(event_msg, sizeof(event_msg), "Moving minutes by %d\n", move_minute);
+  // send_to_print_safe(event_msg);
 
   // 3 cases:
   // 1. Move 1 minute
   // 2. Move 15 minutes from 0 minute position to 15 minute position
   // 3. Move 14 minutes from 1 minute position to 15 minute position
-   
-  minutes = minutes % 60;
+  move_minute = move_minute % 60;
 
-  uint32_t minute_steps = std::ceil((MINUTE_STEPS_PER_REV * minutes) / 60.0f);
+  uint32_t minute_steps = std::ceil((MINUTE_STEPS_PER_REV * move_minute) / 60.0f);
 
   uint32_t next_minute_step = (this->state_.curr_minute_steps + minute_steps) % MINUTE_STEPS_PER_REV;
-  uint8_t next_minute = (this->state_.curr_minute + minutes) % 60;
+  uint8_t next_minute = (this->state_.curr_minute + move_minute) % 60;
 
   if (next_minute_step >= (((MINUTE_STEPS_PER_REV * next_minute) / 60.0f) + 1.0f))
   {
@@ -201,20 +223,24 @@ void System::move_minutes(uint8_t minutes)
   
   this->minute_motor.step(minute_steps);
   this->state_.curr_minute_steps = (this->state_.curr_minute_steps + minute_steps) % MINUTE_STEPS_PER_REV;
-  this->state_.curr_minute = (this->state_.curr_minute + minutes) % 60;
+  this->state_.curr_minute = (this->state_.curr_minute + move_minute) % 60;
   // char state_msg[64];
   // snprintf(state_msg, sizeof(state_msg), "Current minute set to %d\n", this->state_.curr_minute);
   // send_to_print_safe(state_msg);
 }
 
-void System::move_hours(uint16_t hour_units)
+void System::set_to_hour(uint16_t hour_unit)
 {
-  hour_units = hour_units % 720;
+  int16_t move_hour = (hour_unit - (this->state_.curr_hour % 720) + 720) % 720;
+  // snprintf(event_msg, sizeof(event_msg), "Moving hours by %d\n", move_hour);
+  // send_to_print_safe(event_msg);
 
-  uint32_t hour_steps = std::ceil((HOUR_STEPS_PER_REV * hour_units) / 720.0);
+  move_hour = move_hour % 720;
+
+  uint32_t hour_steps = std::ceil((HOUR_STEPS_PER_REV * move_hour) / 720.0);
 
   uint32_t next_hour_step = (this->state_.curr_hour_steps + hour_steps) % HOUR_STEPS_PER_REV;
-  float next_hour = (this->state_.curr_hour + hour_units) % 720;
+  float next_hour = (this->state_.curr_hour + move_hour) % 720;
 
   if (next_hour_step >= (((HOUR_STEPS_PER_REV * next_hour) / 720.0f) + 1.0f))
   {
@@ -223,46 +249,58 @@ void System::move_hours(uint16_t hour_units)
 
   this->hour_motor.step(hour_steps);
   this->state_.curr_hour_steps = (this->state_.curr_hour_steps + hour_steps) % HOUR_STEPS_PER_REV;
-  this->state_.curr_hour = (this->state_.curr_hour + hour_units) % 720;
+  this->state_.curr_hour = (this->state_.curr_hour + move_hour) % 720;
   // char state_msg[64];
   // snprintf(state_msg, sizeof(state_msg), "Current hour set to %d\n", this->state_.curr_hour);
   // send_to_print_safe(state_msg);
 }
 
-void System::move_date_tens(int8_t date_tens)
+void System::set_to_date_tens(uint8_t date_tens)
 {
-  date_tens = date_tens % 4; // Only 0-3 valid
+  int8_t move_date_tens = date_tens - (this->state_.curr_date_tens % 4);
+  // snprintf(event_msg, sizeof(event_msg), "Moving date tens by %d\n", move_date_tens);
+  // send_to_print_safe(event_msg);
 
-  uint32_t date_tens_steps = date_tens * DATE_TENS_STEPS; // 1223 steps per tens increment
+  move_date_tens = move_date_tens % 4; // Only 0-3 valid
+
+  uint32_t date_tens_steps = move_date_tens * DATE_TENS_STEPS; // 1223 steps per tens increment
 
   this->date_tenth_motor.step(date_tens_steps);
-  this->state_.curr_date_tens = (this->state_.curr_date_tens + date_tens) % 4;
+  this->state_.curr_date_tens = (this->state_.curr_date_tens + move_date_tens) % 4;
   // char state_msg[64];
   // snprintf(state_msg, sizeof(state_msg), "Current date_tenth set to %d\n", this->state_.curr_date_tens);
   // send_to_print_safe(state_msg);
 }
 
-void System::move_date_ones(int8_t date_ones)
+void System::set_to_date_ones(uint8_t date_ones)
 {
-  date_ones = date_ones % 10; // Only 0-9 valid
+  int8_t move_date_ones = date_ones - (this->state_.curr_date_ones % 10);
+  // snprintf(event_msg, sizeof(event_msg), "Moving date ones by %d\n", move_date_ones);
+  // send_to_print_safe(event_msg);
 
-  uint32_t date_ones_steps = date_ones * DATE_ONES_STEPS; // 1223 steps per ones increment
+  move_date_ones = move_date_ones % 10; // Only 0-9 valid
+
+  uint32_t date_ones_steps = move_date_ones * DATE_ONES_STEPS; // 1223 steps per ones increment
 
   this->date_ones_motor.step(date_ones_steps);
-  this->state_.curr_date_ones = (this->state_.curr_date_ones + date_ones) % 10;
+  this->state_.curr_date_ones = (this->state_.curr_date_ones + move_date_ones) % 10;
   // char state_msg[64];
   // snprintf(state_msg, sizeof(state_msg), "Current date_ones set to %d\n", this->state_.curr_date_ones);
   // send_to_print_safe(state_msg);
 }
 
-void System::move_months(int8_t months)
+void System::set_to_month(uint8_t month)
 {
-  months = months % 12; // Only 0-11 valid
+  int8_t move_month = (month - (this->state_.curr_month % 12) + 12) % 12;
+  // snprintf(event_msg, sizeof(event_msg), "Moving month by %d\n", move_month);
+  // send_to_print_safe(event_msg);
 
-  uint32_t month_steps = months * MONTH_STEPS; // 682 steps per month increment
+  move_month = move_month % 12; // Only 0-11 valid
+
+  uint32_t month_steps = move_month * MONTH_STEPS; // 682 steps per month increment
 
   this->month_motor.step(month_steps);
-  this->state_.curr_month = (this->state_.curr_month + months) % 12;
+  this->state_.curr_month = (this->state_.curr_month + move_month) % 12;
   // char state_msg[64];
   // snprintf(state_msg, sizeof(state_msg), "Current month set to %d\n", this->state_.curr_month);
   // send_to_print_safe(state_msg);

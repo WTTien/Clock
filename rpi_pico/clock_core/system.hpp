@@ -59,6 +59,11 @@ public:
 
     OnBoardLED onboard_led;
     LED led_1A;
+    LED led_2A;
+    LED led_1B;
+    LED led_2B;
+    LED led_1C;
+    LED led_2C;
     GPIOStepperMotor hour_motor;
     GPIOStepperMotor minute_motor;
     PCF8575StepperMotor date_tenth_motor;
@@ -69,11 +74,11 @@ public:
 
     bool init();
     void run();
-    void move_minutes(uint8_t minutes);
-    void move_hours(uint16_t hours);
-    void move_date_tens(int8_t tens);
-    void move_date_ones(int8_t ones);
-    void move_months(int8_t months);
+    void set_to_minute(uint8_t minutes);
+    void set_to_hour(uint16_t hours);
+    void set_to_date_tens(uint8_t date_tens);
+    void set_to_date_ones(uint8_t date_ones);
+    void set_to_month(uint8_t month);
 
     ClockState state_{};
     

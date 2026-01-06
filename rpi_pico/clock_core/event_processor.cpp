@@ -62,22 +62,71 @@ void process_event_queue(System* clock_system)
 
         if(parse_user_cmd(msg, user_input)) {
             if (user_input.type == "LED") {
-                if (user_input.comp == "1A") {
-                    if (user_input.cmd == "ON") {
+
+                if (user_input.cmd == "ON") {
+                    if (user_input.comp == "1A") {
                         send_to_print_safe("LED 1A turned ON.\n");
                         clock_system->onboard_led.set_led(true);
                         clock_system->led_1A.set_led(true);
-                    } 
-                    else if (user_input.cmd == "OFF") {
+                    }
+                    else if (user_input.comp == "1B") {
+                        send_to_print_safe("LED 1B turned ON.\n");
+                        clock_system->led_1B.set_led(true);
+                    }
+                    else if (user_input.comp == "2A") {
+                        send_to_print_safe("LED 2A turned ON.\n");
+                        clock_system->led_2A.set_led(true);
+                    }
+                    else if (user_input.comp == "2B") {
+                        send_to_print_safe("LED 2B turned ON.\n");
+                        clock_system->led_2B.set_led(true);
+                    }
+                    else if (user_input.comp == "1C") {
+                        send_to_print_safe("LED 1C turned ON.\n");
+                        clock_system->led_1C.set_led(true);
+                    }
+                    else if (user_input.comp == "2C") {
+                        send_to_print_safe("LED 2C turned ON.\n");
+                        clock_system->led_2C.set_led(true);
+                    }
+                    else {
+                        send_to_print_safe("Unknown component for LED type!\n");
+                    }
+                }
+                
+                else if (user_input.cmd == "OFF") {
+                    if (user_input.comp == "1A") {
                         send_to_print_safe("LED 1A turned OFF.\n");
                         clock_system->onboard_led.set_led(false);
                         clock_system->led_1A.set_led(false);
-                    } 
-                    else {
-                        send_to_print_safe("Unknown command for LED 1A!\n");
                     }
-                } else {
-                    send_to_print_safe("Unknown component for LED type!\n");
+                    else if (user_input.comp == "1B") {
+                        send_to_print_safe("LED 1B turned OFF.\n");
+                        clock_system->led_1B.set_led(false);
+                    }
+                    else if (user_input.comp == "2A") {
+                        send_to_print_safe("LED 2A turned OFF.\n");
+                        clock_system->led_2A.set_led(false);
+                    }
+                    else if (user_input.comp == "2B") {
+                        send_to_print_safe("LED 2B turned OFF.\n");
+                        clock_system->led_2B.set_led(false);
+                    }
+                    else if (user_input.comp == "1C") {
+                        send_to_print_safe("LED 1C turned OFF.\n");
+                        clock_system->led_1C.set_led(false);
+                    }
+                    else if (user_input.comp == "2C") {
+                        send_to_print_safe("LED 2C turned OFF.\n");
+                        clock_system->led_2C.set_led(false);
+                    }
+                    else {
+                        send_to_print_safe("Unknown component for LED type!\n");
+                    }
+                }
+
+                else {
+                    send_to_print_safe("Unknown command for LED type!\n");
                 }
             }
 
@@ -117,6 +166,12 @@ void process_event_queue(System* clock_system)
                         send_to_print_safe(spin_msg);
                         clock_system->month_motor.step(steps);
                     }
+                    else {
+                        send_to_print_safe("Unknown component for MOTOR type!\n");
+                    }
+                }
+                else {
+                    send_to_print_safe("Unknown command for MOTOR type!\n");
                 }
             }
 
@@ -162,31 +217,17 @@ void process_event_queue(System* clock_system)
                                     dt.hour, dt.minute, dt.second, dt.date, dt.month, dt.year);
                         send_to_print_safe(event_msg);
 
-                        int8_t move_minute = (dt.minute - (clock_system->state_.curr_minute % 60) + 60) % 60;
-                        // snprintf(event_msg, sizeof(event_msg), "Moving minutes by %d\n", move_minute);
-                        // send_to_print_safe(event_msg);
-                        clock_system->move_minutes(move_minute);
+                        clock_system->set_to_minute(dt.minute);
                         
                         uint8_t hour_adjusted = dt.hour % 12; // Convert to 12-hour format
-                        int16_t move_hour = ((hour_adjusted * 60 + dt.minute) - (clock_system->state_.curr_hour % 720) + 720) % 720;
-                        // snprintf(event_msg, sizeof(event_msg), "Moving hours by %d\n", move_hour);
-                        // send_to_print_safe(event_msg);
-                        clock_system->move_hours(move_hour);
+                        uint16_t hour_unit = (hour_adjusted * 60) + dt.minute;
+                        clock_system->set_to_hour(hour_unit);
 
-                        int8_t move_date_tens = (dt.date / 10) - (clock_system->state_.curr_date_tens % 4);
-                        // snprintf(event_msg, sizeof(event_msg), "Moving date tens by %d\n", move_date_tens);
-                        // send_to_print_safe(event_msg);
-                        clock_system->move_date_tens(move_date_tens);
+                        clock_system->set_to_date_tens(dt.date / 10);
 
-                        int8_t move_date_ones = (dt.date % 10) - (clock_system->state_.curr_date_ones % 10);
-                        // snprintf(event_msg, sizeof(event_msg), "Moving date ones by %d\n", move_date_ones);
-                        // send_to_print_safe(event_msg);
-                        clock_system->move_date_ones(move_date_ones);
-
-                        int8_t move_month = (dt.month - (clock_system->state_.curr_month % 12) + 12) % 12;
-                        // snprintf(event_msg, sizeof(event_msg), "Moving month by %d\n", move_month);
-                        // send_to_print_safe(event_msg);
-                        clock_system->move_months(move_month);
+                        clock_system->set_to_date_ones(dt.date % 10);
+                        
+                        clock_system->set_to_month(dt.month);
                     }
                 }
             }
@@ -201,16 +242,11 @@ void process_event_queue(System* clock_system)
                                     hour_now, min_now);
                         send_to_print_safe(event_msg);
 
-                        int8_t move_minute = (min_now - (clock_system->state_.curr_minute % 60) + 60) % 60;
-                        snprintf(event_msg, sizeof(event_msg), "Moving minutes by %d\n", move_minute);
-                        send_to_print_safe(event_msg);
-                        clock_system->move_minutes(move_minute);
+                        clock_system->set_to_minute(min_now);
                         
                         uint8_t hour_adjusted = hour_now % 12; // Convert to 12-hour format
-                        int16_t move_hour = ((hour_adjusted * 60 + min_now) - (clock_system->state_.curr_hour % 720) + 720) % 720;
-                        snprintf(event_msg, sizeof(event_msg), "Moving hours by %d\n", move_hour);
-                        send_to_print_safe(event_msg);
-                        clock_system->move_hours(move_hour);
+                        uint16_t hour_unit = (hour_adjusted * 60) + min_now;
+                        clock_system->set_to_hour(hour_unit);
 
                         send_to_print_safe("---TEST---\n");
                     }
