@@ -1,6 +1,6 @@
 import sys
 import serial
-from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QGridLayout, QVBoxLayout, QTextEdit, QSizePolicy
+from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QGridLayout, QVBoxLayout, QTextEdit, QSizePolicy, QSpinBox
 from PyQt6.QtCore import QThread, pyqtSignal
 import time
 
@@ -72,23 +72,37 @@ class PicoWindow(QWidget):
 
         # Motor Buttons
         motor_controls_layout = QWidget()
-        motor_buttons_grid = QGridLayout(motor_controls_layout)
-       
-        motor_buttons = [
-            ("HOUR", 1, 1),
-            ("MINUTE", 1, 2),
-            ("DAYTENTH", 2, 1),
-            ("DAYONES", 2, 2),
-            ("MONTH", 3, 1),
+        motor_inputs_layout = QVBoxLayout(motor_controls_layout)
+        motor_ids = [
+            "HOUR",
+            "MINUTE",
+            "DAYTENTH",
+            "DAYONES",
+            "MONTH",
         ]
-        self.motor_buttons = {} # Dictionary to store button references
+        # self.motor_buttons = {} # Dictionary to store button references
 
-        for motor_id, row, col in motor_buttons:
-            button = QPushButton(f"Motor {motor_id}")
-            button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Make button fill the grid cell
-            button.clicked.connect(lambda checked, motor_id=motor_id: self.motor_button_pressed(motor_id))
-            motor_buttons_grid.addWidget(button, row, col)
-            self.motor_buttons[motor_id] = button  # Store reference
+        for motor_id in motor_ids:
+            motor_row_widget = QWidget()
+            motor_row_layout = QHBoxLayout(motor_row_widget)
+            motor_row_layout.setContentsMargins(0,0,0,0)
+
+            # Button
+            button = QPushButton(f"SPIN Motor {motor_id}")
+            button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+
+            # Number Input
+            spinbox = QSpinBox()
+            spinbox.setRange(-10000, 10000)
+            spinbox.setValue(0)  # Default value
+
+            button.clicked.connect(lambda checked, motor_id=motor_id, spin=spinbox: self.motor_button_pressed(motor_id,spin.value()))
+
+            motor_row_layout.addWidget(button, stretch=3)
+            motor_row_layout.addWidget(spinbox, stretch=1)
+
+            motor_inputs_layout.addWidget(motor_row_widget)
+            # self.motor_buttons[motor_id] = button  # Store button reference
 
         # LED Buttons
         led_controls_layout = QWidget()
@@ -144,24 +158,13 @@ class PicoWindow(QWidget):
         except Exception as e:
             self.append_output(f"Error communicating with Pico: {e}")
 
-    def motor_button_pressed(self, motor_id):
+    def motor_button_pressed(self, motor_id, spin):
         try:
-            button = self.motor_buttons.get(motor_id)
-            if not button:
-                print(f"No button found for LED {motor_id}")
-                self.append_output(f"Error: No button found for LED {motor_id}")
-                return
-            
-            if motor_id == "HOUR":
-                spin = 256
-            if motor_id == "MINUTE":
-                spin = 2560
-            if motor_id == "DAYTENTH":
-                spin = 256
-            if motor_id == "DAYONES":
-                spin = 256
-            if motor_id == "MONTH":
-                spin = 256
+            # button = self.motor_buttons.get(motor_id)
+            # if not button:
+            #     print(f"No button found for MOTOR {motor_id}")
+            #     self.append_output(f"Error: No button found for MOTOR {motor_id}")
+            #     return
             try:
                 self.serial_thread.ser.write(f"[MOTOR] {motor_id} : {spin}\n".encode())
                 self.serial_thread.ser.flush()
