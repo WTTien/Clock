@@ -154,6 +154,24 @@ bool RealTimeClock::writeRegister(uint8_t reg, const uint8_t *value, size_t leng
     return true;
 }
 
+bool RealTimeClock::setTimeFromNTP() {
+    time_t now = time(NULL);
+    now += 8 * 3600;  // Adjust for timezone (e.g., UTC+8)
+    
+    struct tm *tm = gmtime(&now);
+
+    DateTime dt;
+    dt.second = tm->tm_sec;
+    dt.minute = tm->tm_min;
+    dt.hour   = tm->tm_hour;
+    dt.day    = tm->tm_wday + 1; // tm_wday: 0-6, DS3231: 1-7
+    dt.date   = tm->tm_mday;
+    dt.month  = tm->tm_mon + 1;  // tm_mon: 0-11, DS3231: 1-12
+    dt.year   = tm->tm_year + 1900;
+
+    return setTime(dt);
+}
+
 void rtc_interrupt_handler(uint gpio, uint32_t events) {
     // Handle RTC interrupt (e.g., read time, clear alarm flag, etc.)
     send_to_print_safe("RTC interrupt triggered: Logging motor spin event.\n");

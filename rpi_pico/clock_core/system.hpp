@@ -8,6 +8,10 @@
 #include "pico/multicore.h"
 #include "pico/cyw43_arch.h"
 
+#include "lwip/apps/sntp.h"
+#include "pico/util/datetime.h"
+#include <time.h>
+
 #include "../clock_services/usb.hpp"
 #include "../clock_services/wifi.hpp"
 

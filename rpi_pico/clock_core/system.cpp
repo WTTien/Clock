@@ -70,14 +70,24 @@ bool System::init()
   // WiFi
 #ifdef CYW43_WL_GPIO_LED_PIN
   cyw43_arch_init();
-  // cyw43_arch_enable_sta_mode();
-  // int rc = cyw43_arch_wifi_connect_timeout_ms(
-  //     WIFI_SSID,
-  //     WIFI_PASSWORD,
-  //     CYW43_AUTH_WPA2_AES_PSK,
-  //     60000
-  // );
-  // hard_assert(rc == PICO_OK);
+  cyw43_arch_enable_sta_mode();
+  int rc = cyw43_arch_wifi_connect_timeout_ms(
+      WIFI_SSID,
+      WIFI_PASSWORD,
+      CYW43_AUTH_WPA2_AES_PSK,
+      60000
+  );
+  hard_assert(rc == PICO_OK);
+
+  // Configure NTP server - for getting time
+  sntp_setoperatingmode(SNTP_OPMODE_POLL);
+  sntp_setservername(0, "pool.ntp.org");
+  sntp_init();
+  // Wait until time is valid
+  time_t now = 0;
+  while ((now = time(NULL)) < 100000) {
+    sleep_ms(100);  // small delay
+  }
 #endif
 
   //////////////////////////////////////////////
@@ -91,13 +101,13 @@ bool System::init()
   gpio_pull_up(I2C_SCL_PIN);
   gpio_pull_up(I2C_SDA_PIN);
   
-  
   //////////////////////////////////
   // Clock_Drivers initialisation //
   //////////////////////////////////
   
   // Onboard LED
-  int rc = this->onboard_led.init();
+  // int rc = this->onboard_led.init();
+  rc = this->onboard_led.init();
   hard_assert(rc == PICO_OK);
   // this->onboard_led.set_led(true);
 

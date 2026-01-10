@@ -57,7 +57,7 @@ target_link_libraries(clock pico_stdlib pico_multicore hardware_i2c tinyusb_devi
 
 
 if (PICO_CYW43_SUPPORTED)
-    target_link_libraries(clock pico_cyw43_arch_lwip_threadsafe_background)
+    target_link_libraries(clock pico_cyw43_arch_lwip_threadsafe_background pico_lwip_sntp)
 endif()
 
 pico_enable_stdio_usb(clock 1)

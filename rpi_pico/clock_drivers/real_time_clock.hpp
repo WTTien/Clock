@@ -5,6 +5,8 @@
 #include "hardware/i2c.h"
 #include "../clock_services/usb.hpp"
 
+#include <time.h>
+
 #define DS3231_REG_TIME 0x00 // Seconds register
 
 struct DateTime {
@@ -27,6 +29,7 @@ public:
     bool setTime(const DateTime &dt);
     bool readRegister(uint8_t reg, uint8_t &value, size_t length);
     bool writeRegister(uint8_t reg, const uint8_t *value, size_t length);
+    bool setTimeFromNTP();
 
 
 private:
