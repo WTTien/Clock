@@ -1,6 +1,19 @@
 import sys
 import serial
-from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QGridLayout, QVBoxLayout, QTextEdit, QSizePolicy, QSpinBox
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import \
+    QApplication, \
+    QWidget, \
+    QPushButton, \
+    QHBoxLayout, \
+    QGridLayout, \
+    QVBoxLayout, \
+    QTextEdit, \
+    QSizePolicy, \
+    QSpinBox, \
+    QLabel, \
+    QFrame, \
+    QCheckBox
 from PyQt6.QtCore import QThread, pyqtSignal
 import time
 
@@ -56,19 +69,84 @@ class PicoWindow(QWidget):
         reboot_button = QPushButton("Reboot to BOOTSEL")
         reboot_button.clicked.connect(self.reboot_to_bootsel)
 
-        # RTC Buttons
+        # RTC Layouts
         rtc_layout = QWidget()
+
+        # RTC - Read section
         rtc_read_button = QPushButton(f"RTC Read")
         rtc_read_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Make button fill the grid cell
         rtc_read_button.clicked.connect(self.rtc_read_button_pressed)
+        # RTC - Read section
 
-        rtc_set_button = QPushButton(f"RTC Set")
-        rtc_set_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Make button fill the grid cell
-        rtc_set_button.clicked.connect(self.rtc_set_button_pressed)
+        # RTC - Set section
+        rtc_set_section = QFrame()
+        rtc_set_section.setFrameShape(QFrame.Shape.StyledPanel)
+        rtc_set_section.setFrameShadow(QFrame.Shadow.Raised)
+        rtc_set_section.setLayout(QVBoxLayout())
+
+            # RTC - Set section - Unlock Checkbox
+        rtc_set_unlock_checkbox = QCheckBox("Enable RTC Set")
+        rtc_set_unlock_checkbox.stateChanged.connect(self.toggle_rtc_set_inputs)
+            # RTC - Set section - Unlock Checkbox
+
+            # RTC - Set section - Setting instruction inputs        
+        rtc_set_inputs_section = QHBoxLayout()
+                # RTC - Set section - Setting instruction inputs - Manual
+        rtc_manual_set_section = QWidget()
+        rtc_manual_set_layout = QVBoxLayout()
+        rtc_manual_set_section.setLayout(rtc_manual_set_layout)
+
+        rtc_manual_set_input_grid_layout = QGridLayout()
+        
+        self.rtc_manual_set_inputs = {}
+        rtc_manual_set_inputs_fields = [
+            ("Hour", 0, 23),
+            ("Minute", 0, 59),
+            ("Second", 0, 59),
+            ("Day", 0, 6),     # If using weekday 0=Sunday
+            ("Date", 1, 31),
+            ("Month", 1, 12),
+            ("Year", 2000, 3000)
+        ]
+
+        for i, (label_text, min_val, max_val) in enumerate(rtc_manual_set_inputs_fields):
+            label = QLabel(label_text)
+            spinbox = QSpinBox()
+            spinbox.setRange(min_val, max_val)
+            spinbox.setMaximumWidth(70)
+            spinbox.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+            self.rtc_manual_set_inputs[label_text] = spinbox
+            rtc_manual_set_input_grid_layout.addWidget(label, i, 0)
+            rtc_manual_set_input_grid_layout.addWidget(spinbox, i, 1)
+
+        rtc_manual_set_layout.addLayout(rtc_manual_set_input_grid_layout)
+
+        self.rtc_manual_set_button = QPushButton("Manual Set RTC")
+        self.rtc_manual_set_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.rtc_manual_set_button.clicked.connect(self.rtc_set_button_manual_pressed)
+
+        rtc_manual_set_layout.addWidget(self.rtc_manual_set_button)
+                # RTC - Set section - Setting instruction inputs - Manual
+                # RTC - Set section - Setting instruction inputs - NTP Sync
+        self.rtc_set_ntp_button = QPushButton(f"NTP Time RTC Sync Set")
+        self.rtc_set_ntp_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Make button fill the grid cell
+        self.rtc_set_ntp_button.clicked.connect(self.rtc_set_button_ntp_pressed)
+                # RTC - Set section - Setting instruction inputs - NTP Sync
+        rtc_set_inputs_section.addWidget(rtc_manual_set_section)
+        rtc_set_inputs_section.addWidget(self.rtc_set_ntp_button)
+            # RTC - Set section - Setting instruction inputs
+
+        rtc_set_section.layout().addWidget(rtc_set_unlock_checkbox)
+        rtc_set_section.layout().addLayout(rtc_set_inputs_section)
+        # RTC - Set section
+
+        # Make set disabled at the start
+        rtc_set_unlock_checkbox.setChecked(False)
+        self.toggle_rtc_set_inputs(Qt.CheckState.Unchecked)
 
         rtc_layout.setLayout(QHBoxLayout())
         rtc_layout.layout().addWidget(rtc_read_button)
-        rtc_layout.layout().addWidget(rtc_set_button)
+        rtc_layout.layout().addWidget(rtc_set_section)
 
         # Motor Buttons
         motor_controls_layout = QWidget()
@@ -150,11 +228,36 @@ class PicoWindow(QWidget):
             self.append_output(">>> Reading RTC time...")
         except Exception as e:
             self.append_output(f"Error communicating with Pico: {e}")
-    def rtc_set_button_pressed(self):
+
+    def toggle_rtc_set_inputs(self, state):
+        enabled = (state == Qt.CheckState.Checked.value)
+        for spinbox in self.rtc_manual_set_inputs.values():
+            spinbox.setEnabled(enabled)
+        self.rtc_manual_set_button.setEnabled(enabled)
+        self.rtc_set_ntp_button.setEnabled(enabled)
+
+    def rtc_set_button_manual_pressed(self):
+        second = self.rtc_manual_set_inputs["Second"].value()
+        minute = self.rtc_manual_set_inputs["Minute"].value()
+        hour = self.rtc_manual_set_inputs["Hour"].value()
+        day = self.rtc_manual_set_inputs["Day"].value() # weekday, 0=Sunday
+        date = self.rtc_manual_set_inputs["Date"].value()
+        month = self.rtc_manual_set_inputs["Month"].value()
+        year = self.rtc_manual_set_inputs["Year"].value()
+
         try:
-            self.serial_thread.ser.write(f"[RTC] SET : NOW\n".encode())
+            manual_time_to_send = f"{hour:02d}-{minute:02d}-{second:02d}_{day}_{date:02d}-{month:02d}-{year}"
+            self.serial_thread.ser.write(f"[RTC] SET_MANUAL : {manual_time_to_send}\n".encode())
             self.serial_thread.ser.flush()
-            self.append_output(">>> Setting RTC time...")
+            self.append_output(">>> Setting RTC time via manual user input...")
+        except Exception as e:
+            self.append_output(f"Error communicating with Pico: {e}")
+
+    def rtc_set_button_ntp_pressed(self):
+        try:
+            self.serial_thread.ser.write(f"[RTC] SET_NTP : NOW\n".encode())
+            self.serial_thread.ser.flush()
+            self.append_output(">>> Setting RTC time via NTP...")
         except Exception as e:
             self.append_output(f"Error communicating with Pico: {e}")
 

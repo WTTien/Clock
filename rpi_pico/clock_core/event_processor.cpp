@@ -51,6 +51,47 @@ bool parse_user_cmd(std::string_view s, UserInput& out)
     return true;
 }
 
+bool parse_datetime(const char* str, DateTime& dt)
+{
+    uint8_t hour, minute, second;
+    uint8_t day, date, month, year;
+
+    int matched = sscanf(
+        str,
+        "%d-%d-%d_%d_%d-%d-%d",
+        &hour,
+        &minute,
+        &second,
+        &day,
+        &date,
+        &month,
+        &year
+    );
+
+    if (matched != 7) {
+        return false; // format error
+    }
+
+    // Optional: range validation
+    if (hour < 0 || hour > 23) return false;
+    if (minute < 0 || minute > 59) return false;
+    if (second < 0 || second > 59) return false;
+    if (day < 0 || day > 6) return false;
+    if (date < 1 || date > 31) return false;
+    if (month < 1 || month > 12) return false;
+    if (year < 2000 || year > 3000) return false;
+
+    dt.hour   = hour;
+    dt.minute = minute;
+    dt.second = second;
+    dt.day    = day;
+    dt.date   = date;
+    dt.month  = month;
+    dt.year   = year;
+
+    return true;
+}
+
 void process_event_queue(System* clock_system)
 {
     char event_msg[EVENT_MSG_SIZE];
@@ -188,24 +229,36 @@ void process_event_queue(System* clock_system)
                             send_to_print_safe("Failed to read time from RTC!\n");
                         }
                     }
-                }
-                else if (user_input.comp == "SET") {
-                    if (user_input.cmd == "NOW") {
-                        DateTime dt;
-                        dt.second = 0;  // Set seconds to 0
-                        dt.minute = 3;  // Set minutes to 2
-                        dt.hour   = 1;  // Set hours to 1 (1:00 AM)
-                        dt.day    = 6;   //  Set day of the week to 6 (Friday)
-                        dt.date   = 26;  //  Set date to the 25th
-                        dt.month  = 12;  // Set month to December
-                        dt.year   = 2025; // Set year to 2025
-                        if(clock_system->rtc.setTime(dt)) {
-                            send_to_print_safe("Time written to RTC:\n");
-                        } else {
-                            send_to_print_safe("Failed to set time from RTC!\n");
-                        }
+                    else {
+                        send_to_print_safe("I got [RTC] READ but I cant understand data/command given :(\n");
                     }
                 }
+                else if (user_input.comp == "SET_MANUAL") {
+                    DateTime dt;
+                    std::string cmd_str(user_input.cmd);
+                    if (parse_datetime(cmd_str.c_str(), dt)) {
+                        if (clock_system->rtc.setTime(dt)) {
+                            send_to_print_safe("Manual time written to RTC:\n");
+                        } else {
+                            send_to_print_safe("Failed to set manual time to RTC!\n");
+                        }
+                    }
+                    else {
+                        send_to_print_safe("I got [RTC] SET MANUAL but I cant understand data/command given :(\n");
+                    }
+                }
+                else if (user_input.comp == "SET_NTP") {
+                    if (user_input.cmd == "NOW") {
+                        if (clock_system->rtc.setTimeFromNTP()) {
+                            send_to_print_safe("RTC time set from NTP successfully.\n");
+                        } else {
+                            send_to_print_safe("Failed to set RTC time from NTP!\n");
+                        }
+                    }
+                    else {
+                        send_to_print_safe("I got [RTC] SET NTP but I cant understand data/command given :(\n");
+                    }
+                }        
                 
                 // NOTE: MAIN OPERATION!
                 else if (user_input.comp == "INT") {
@@ -229,6 +282,13 @@ void process_event_queue(System* clock_system)
                         
                         clock_system->set_to_month(dt.month);
                     }
+                    else {
+                        send_to_print_safe("I got [RTC] INT but I cant understand data/command given :(\n");
+                    }
+                }
+            
+                else {
+                    send_to_print_safe("I got some instruction on [RTC] but not too sure what is it about :(\n");
                 }
             }
 

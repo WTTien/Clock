@@ -5,6 +5,8 @@
 #include "pico/bootrom.h"
 #include <string>
 #include <string_view>
+#include <cstdio>
+#include <cstring>
 
 // From PC we send inputs in the format: [{TYPE}] {COMPONENT}: {COMMAND}
 struct UserInput {
