@@ -13,7 +13,8 @@ from PyQt6.QtWidgets import \
     QSpinBox, \
     QLabel, \
     QFrame, \
-    QCheckBox
+    QCheckBox, \
+    QLineEdit
 from PyQt6.QtCore import QThread, pyqtSignal
 import time
 
@@ -68,6 +69,41 @@ class PicoWindow(QWidget):
         # Reboot to BOOTSEL Button
         reboot_button = QPushButton("Reboot to BOOTSEL")
         reboot_button.clicked.connect(self.reboot_to_bootsel)
+
+        # WiFi Layout
+        wifi_section = QWidget()
+        wifi_section.setLayout(QHBoxLayout())
+
+        wifi_check_button = QPushButton("Check WiFi status")
+        wifi_check_button.clicked.connect(self.wifi_check_button_pressed)
+        wifi_check_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+
+        wifi_disconnect_button = QPushButton("Disconnect WiFi")
+        wifi_disconnect_button.clicked.connect(self.wifi_disconnect_button_pressed)
+        wifi_disconnect_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+
+        wifi_connect_button = QPushButton("Connect WiFi")
+        wifi_connect_button.clicked.connect(self.wifi_connect_button_pressed)
+        wifi_connect_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+
+        wifi_input_details_section = QWidget()
+        wifi_input_details_section.setLayout(QVBoxLayout())
+
+        self.wifi_ssid_input = QLineEdit()
+        self.wifi_ssid_input.setPlaceholderText("SSID")
+        
+        self.wifi_password_input = QLineEdit()
+        self.wifi_password_input.setPlaceholderText("Password")
+        self.wifi_password_input.setEchoMode(QLineEdit.EchoMode.Password)
+
+        wifi_input_details_section.layout().addWidget(self.wifi_ssid_input)
+        wifi_input_details_section.layout().addWidget(self.wifi_password_input)        
+
+        wifi_section.layout().addWidget(wifi_check_button)
+        wifi_section.layout().addWidget(wifi_disconnect_button)
+        wifi_section.layout().addWidget(wifi_connect_button)
+        wifi_section.layout().addWidget(wifi_input_details_section)
+
 
         # RTC Layouts
         rtc_layout = QWidget()
@@ -138,15 +174,32 @@ class PicoWindow(QWidget):
 
         rtc_set_section.layout().addWidget(rtc_set_unlock_checkbox)
         rtc_set_section.layout().addLayout(rtc_set_inputs_section)
-        # RTC - Set section
 
         # Make set disabled at the start
         rtc_set_unlock_checkbox.setChecked(False)
         self.toggle_rtc_set_inputs(Qt.CheckState.Unchecked)
+        # RTC - Set section
+
+        # RTC - System Time section
+        rtc_system_time_section = QWidget()
+        rtc_system_time_section.setLayout(QVBoxLayout())
+
+        rtc_check_system_time_button = QPushButton(f"Check System Time")
+        rtc_check_system_time_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        rtc_check_system_time_button.clicked.connect(self.rtc_check_system_time_button_pressed)
+
+        rtc_sync_system_time_button = QPushButton(f"Sync System Time via NTP")
+        rtc_sync_system_time_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        rtc_sync_system_time_button.clicked.connect(self.rtc_sync_system_time_button_pressed)
+
+        rtc_system_time_section.layout().addWidget(rtc_check_system_time_button)
+        rtc_system_time_section.layout().addWidget(rtc_sync_system_time_button)
+        # RTC - System Time section
 
         rtc_layout.setLayout(QHBoxLayout())
         rtc_layout.layout().addWidget(rtc_read_button)
         rtc_layout.layout().addWidget(rtc_set_section)
+        rtc_layout.layout().addWidget(rtc_system_time_section)
 
         # Motor Buttons
         motor_controls_layout = QWidget()
@@ -208,6 +261,7 @@ class PicoWindow(QWidget):
         #     led_buttons_grid.setColumnStretch(j, 1)
 
         controls_layout.addWidget(reboot_button)
+        controls_layout.addWidget(wifi_section)
         controls_layout.addWidget(rtc_layout)
         controls_layout.addWidget(motor_controls_layout)
         controls_layout.addWidget(led_controls_layout)
@@ -220,6 +274,38 @@ class PicoWindow(QWidget):
         self.serial_thread = SerialReader(PORT, BAUDRATE)
         self.serial_thread.new_line.connect(self.append_output)
         self.serial_thread.start()
+
+
+    def wifi_check_button_pressed(self):
+        try:
+            self.serial_thread.ser.write(f"[WIFI] STATUS : NOW\n".encode())
+            self.serial_thread.ser.flush()
+            self.append_output(">>> Checking WiFi status...")
+        except Exception as e:
+            self.append_output(f"Error communicating with Pico: {e}")
+
+    def wifi_disconnect_button_pressed(self):
+        try:
+            self.serial_thread.ser.write(f"[WIFI] DISCONNECT : NOW\n".encode())
+            self.serial_thread.ser.flush()
+            self.append_output(">>> Disconnecting WiFi...")
+        except Exception as e:
+            self.append_output(f"Error communicating with Pico: {e}")
+
+    def wifi_connect_button_pressed(self):
+        ssid = self.wifi_ssid_input.text().strip()
+        password = self.wifi_password_input.text().strip()
+
+        if not ssid:
+            connect_details = "DEFAULT"
+        else:
+            connect_details = f"{ssid}_{password}"
+        try:
+            self.serial_thread.ser.write(f"[WIFI] CONNECT : {connect_details}\n".encode())
+            self.serial_thread.ser.flush()
+            self.append_output(">>> Connecting to WiFi...")
+        except Exception as e:
+            self.append_output(f"Error communicating with Pico: {e}")
 
     def rtc_read_button_pressed(self):
         try:
@@ -258,6 +344,22 @@ class PicoWindow(QWidget):
             self.serial_thread.ser.write(f"[RTC] SET_NTP : NOW\n".encode())
             self.serial_thread.ser.flush()
             self.append_output(">>> Setting RTC time via NTP...")
+        except Exception as e:
+            self.append_output(f"Error communicating with Pico: {e}")
+
+    def rtc_check_system_time_button_pressed(self):
+        try:
+            self.serial_thread.ser.write(f"[RTC] CHECK_SYS_TIME : NOW\n".encode())
+            self.serial_thread.ser.flush()
+            self.append_output(">>> Checking Pico system time synced with NTP...")
+        except Exception as e:
+            self.append_output(f"Error communicating with Pico: {e}")
+
+    def rtc_sync_system_time_button_pressed(self):
+        try:
+            self.serial_thread.ser.write(f"[RTC] SYNC_SYS_TIME : NOW\n".encode())
+            self.serial_thread.ser.flush()
+            self.append_output(">>> Syncing Pico system time with NTP...")
         except Exception as e:
             self.append_output(f"Error communicating with Pico: {e}")
 

@@ -67,27 +67,11 @@ bool System::init()
   // Launch core 1 to handle USB in the background
   multicore_launch_core1(core1_main);
 
-  // WiFi
+  // WiFi and SNTP
 #ifdef CYW43_WL_GPIO_LED_PIN
-  cyw43_arch_init();
-  cyw43_arch_enable_sta_mode();
-  int rc = cyw43_arch_wifi_connect_timeout_ms(
-      WIFI_SSID,
-      WIFI_PASSWORD,
-      CYW43_AUTH_WPA2_AES_PSK,
-      60000
-  );
-  hard_assert(rc == PICO_OK);
-
-  // Configure NTP server - for getting time
-  sntp_setoperatingmode(SNTP_OPMODE_POLL);
-  sntp_setservername(0, "pool.ntp.org");
-  sntp_init();
-  // Wait until time is valid
-  time_t now = 0;
-  while ((now = time(NULL)) < 100000) {
-    sleep_ms(100);  // small delay
-  }
+  connect_to_wifi();
+  try_sync_system_time_sntp();
+  disconnect_from_wifi();
 #endif
 
   //////////////////////////////////////////////
@@ -106,8 +90,8 @@ bool System::init()
   //////////////////////////////////
   
   // Onboard LED
-  // int rc = this->onboard_led.init();
-  rc = this->onboard_led.init();
+  int rc = this->onboard_led.init();
+  // rc = this->onboard_led.init();
   hard_assert(rc == PICO_OK);
   // this->onboard_led.set_led(true);
 
@@ -334,3 +318,40 @@ uint8_t System::get_test_hour()
     return this->test_hour;
 }
 /// TEST UTILITIES ///
+
+bool System::try_sync_system_time_sntp()
+{
+  if(check_wifi_status())
+  {
+    //Reset system time
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = 0;
+    settimeofday(&tv, nullptr);
+
+    sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    sntp_setservername(0, "pool.ntp.org");
+    sntp_init();
+    
+    // Wait until time is valid
+    absolute_time_t timeout = make_timeout_time_ms(30000); // 30 seconds timeout
+    time_t now = 0;
+    while ((now = time(NULL)) < 100000) {
+      sleep_ms(200);  // small delay
+
+      if (absolute_time_diff_us(get_absolute_time(), timeout) < 0) {
+        // Timeout after 30 seconds
+        send_to_print_safe("SNTP time sync timeout!\n");
+        sntp_stop();
+        return false;
+      }
+    }
+
+    // Stop after synced
+    sntp_stop();
+    return true;
+  }
+  else {
+    return false; // No WiFi connection
+  }
+}

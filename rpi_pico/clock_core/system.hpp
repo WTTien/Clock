@@ -11,6 +11,7 @@
 #include "lwip/apps/sntp.h"
 #include "pico/util/datetime.h"
 #include <time.h>
+#include <sys/time.h>
 
 #include "../clock_services/usb.hpp"
 #include "../clock_services/wifi.hpp"
@@ -24,10 +25,6 @@
 #include "../clock_drivers/real_time_clock.hpp"
 
 #include <cmath>
-
-
-#define WIFI_SSID ""
-#define WIFI_PASSWORD ""
 
 #ifndef LED_DELAY_MS
 #define LED_DELAY_MS 1000
@@ -83,6 +80,7 @@ public:
     void set_to_date_tens(uint8_t date_tens);
     void set_to_date_ones(uint8_t date_ones);
     void set_to_month(uint8_t month);
+    bool try_sync_system_time_sntp();
 
     ClockState state_{};
     

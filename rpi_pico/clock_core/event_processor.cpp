@@ -222,8 +222,8 @@ void process_event_queue(System* clock_system)
                         DateTime dt;
                         if(clock_system->rtc.readTime(dt)) {
                             char time_msg[64];
-                            snprintf(time_msg, sizeof(time_msg), "Time: %02d:%02d:%02d, Date: %02d/%02d/%04d\n",
-                                        dt.hour, dt.minute, dt.second, dt.date, dt.month, dt.year);
+                            snprintf(time_msg, sizeof(time_msg), "Time: %02d:%02d:%02d, Date: %02d/%02d/%04d, Day: %d\n",
+                                        dt.hour, dt.minute, dt.second, dt.date, dt.month, dt.year, dt.day);
                             send_to_print_safe(time_msg);
                         } else {
                             send_to_print_safe("Failed to read time from RTC!\n");
@@ -258,7 +258,36 @@ void process_event_queue(System* clock_system)
                     else {
                         send_to_print_safe("I got [RTC] SET NTP but I cant understand data/command given :(\n");
                     }
-                }        
+                }
+                else if (user_input.comp == "CHECK_SYS_TIME") {
+                    if (user_input.cmd == "NOW") {
+                        time_t now = time(NULL);
+                        now += 8 * 3600;  // Adjust for timezone (e.g., UTC+8)
+
+                        struct tm *tm = gmtime(&now);
+
+                        char sys_time_msg[64];
+                        snprintf(sys_time_msg, sizeof(sys_time_msg), "System Time: %02d:%02d:%02d, Date: %02d/%02d/%04d, Weekday: %d\n",
+                                    tm->tm_hour, tm->tm_min, tm->tm_sec,
+                                    tm->tm_mday, tm->tm_mon + 1, tm->tm_year + 1900, tm->tm_wday);
+                        send_to_print_safe(sys_time_msg);
+                    }
+                    else {
+                        send_to_print_safe("I got [RTC] CHECK SYS TIME but I cant understand data/command given :(\n");
+                    }
+                }
+                else if (user_input.comp == "SYNC_SYS_TIME") {
+                    if (user_input.cmd == "NOW") {
+                        if (clock_system->try_sync_system_time_sntp()) {
+                            send_to_print_safe("Pico system time synced from NTP successfully.\n");
+                        } else {
+                            send_to_print_safe("Failed to sync Pico system time from NTP!\n");
+                        }
+                    }
+                    else {
+                        send_to_print_safe("I got [RTC] SYNC SYS TIME but I cant understand data/command given :(\n");
+                    }
+                }
                 
                 // NOTE: MAIN OPERATION!
                 else if (user_input.comp == "INT") {
@@ -289,6 +318,58 @@ void process_event_queue(System* clock_system)
             
                 else {
                     send_to_print_safe("I got some instruction on [RTC] but not too sure what is it about :(\n");
+                }
+            }
+
+            else if (user_input.type == "WIFI") {
+                if (user_input.comp == "STATUS") {
+                    if (user_input.cmd == "NOW") {
+                        if (check_wifi_status()) {
+                            send_to_print_safe("WiFi is connected.\n");
+                        } else {
+                            send_to_print_safe("WiFi is disconnected.\n");
+                        }
+                    }
+                    else {
+                        send_to_print_safe("I got [WIFI] STATUS but I cant understand data/command given :(\n");
+                    }
+                }
+                else if (user_input.comp == "CONNECT") {
+                    if (user_input.cmd == "DEFAULT") { // No SSID/PASSWORD provided, use default
+                        if (connect_to_wifi()) {
+                            send_to_print_safe("Connected to WiFi successfully.\n");
+                        } else {
+                            send_to_print_safe("Failed to connect to WiFi!\n");
+                        }
+                    }
+                    else if (user_input.cmd.find('_') != std::string_view::npos) { // SSID and PASSWORD provided
+                        size_t underscore_pos = user_input.cmd.find('_');
+                        std::string ssid(user_input.cmd.substr(0, underscore_pos));
+                        std::string password(user_input.cmd.substr(underscore_pos + 1));
+                        if (connect_to_wifi(ssid, password)) {
+                            send_to_print_safe("Connected to WiFi successfully.\n");
+                        } else {
+                            send_to_print_safe("Failed to connect to WiFi!\n");
+                        }
+                    }
+                    else {
+                        send_to_print_safe("I got [WIFI] CONNECT but I cant understand data/command given :(\n");
+                    }
+                }
+                else if (user_input.comp == "DISCONNECT") {
+                    if (user_input.cmd == "NOW") {
+                        if (disconnect_from_wifi()) {
+                            send_to_print_safe("Disconnected from WiFi successfully.\n");
+                        } else {
+                            send_to_print_safe("Failed to disconnect from WiFi!\n");
+                        }
+                    }
+                    else {
+                        send_to_print_safe("I got [WIFI] DISCONNECT but I cant understand data/command given :(\n");
+                    }
+                }
+                else {
+                    send_to_print_safe("I got some instruction on [WIFI] but not too sure what is it about :(\n");
                 }
             }
 
