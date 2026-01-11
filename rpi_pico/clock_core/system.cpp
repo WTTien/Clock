@@ -215,7 +215,15 @@ void System::set_to_minute(uint8_t minute)
     minute_steps = minute_steps - 1; // Adjusting minute steps to avoid overshoot
   }
   
-  this->minute_motor.step(minute_steps);
+  // Decide if it is quicker to move forward / backward
+  uint32_t forward_steps = minute_steps;
+  uint32_t backward_steps = MINUTE_STEPS_PER_REV - minute_steps;
+  if (backward_steps < forward_steps) {
+    this->minute_motor.step(-backward_steps);
+  } else {
+    this->minute_motor.step(forward_steps);
+  }
+  // Update of internal state just follow as if motor move forwards
   this->state_.curr_minute_steps = (this->state_.curr_minute_steps + minute_steps) % MINUTE_STEPS_PER_REV;
   this->state_.curr_minute = (this->state_.curr_minute + move_minute) % 60;
   // char state_msg[64];
@@ -241,7 +249,15 @@ void System::set_to_hour(uint16_t hour_unit)
     hour_steps = hour_steps - 1; // Adjusting hour steps to avoid overshoot
   }
 
-  this->hour_motor.step(hour_steps);
+  // Decide if it is quicker to move forward / backward
+  uint32_t forward_steps = hour_steps;
+  uint32_t backward_steps = HOUR_STEPS_PER_REV - hour_steps;
+  if (backward_steps < forward_steps) {
+    this->hour_motor.step(-backward_steps);
+  } else {
+    this->hour_motor.step(forward_steps);
+  }
+  // Update of internal state just follow as if motor move forwards
   this->state_.curr_hour_steps = (this->state_.curr_hour_steps + hour_steps) % HOUR_STEPS_PER_REV;
   this->state_.curr_hour = (this->state_.curr_hour + move_hour) % 720;
   // char state_msg[64];
@@ -291,9 +307,15 @@ void System::set_to_month(uint8_t month)
 
   move_month = move_month % 12; // Only 0-11 valid
 
-  uint32_t month_steps = move_month * MONTH_STEPS; // 682 steps per month increment
-
-  this->month_motor.step(month_steps);
+  // Decide if it is quicker to move forward / backward
+  uint8_t forward_month = move_month;
+  uint8_t backward_month = 12 - move_month;
+  if (backward_month < forward_month) {
+    this->month_motor.step(-backward_month * MONTH_STEPS); // 682 steps per month increment
+  } else {
+    this->month_motor.step(forward_month * MONTH_STEPS); // 682 steps per month increment
+  }
+  // Update of internal state just follow as if motor move forwards
   this->state_.curr_month = (this->state_.curr_month + move_month) % 12;
   // char state_msg[64];
   // snprintf(state_msg, sizeof(state_msg), "Current month set to %d\n", this->state_.curr_month);
