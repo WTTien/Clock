@@ -52,6 +52,8 @@ System::System()
   state_.curr_date_ones = 0;
   state_.curr_date_tens = 0;
   state_.curr_month = 12;
+
+  debug_mode = false;
 }
 
 bool System::init()

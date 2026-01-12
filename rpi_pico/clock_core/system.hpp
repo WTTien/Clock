@@ -83,6 +83,7 @@ public:
     bool try_sync_system_time_sntp();
 
     ClockState state_{};
+    bool debug_mode;
     
     
     /// TEST UTILITIES ///

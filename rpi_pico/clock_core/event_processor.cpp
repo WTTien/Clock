@@ -292,24 +292,26 @@ void process_event_queue(System* clock_system)
                 // NOTE: MAIN OPERATION!
                 else if (user_input.comp == "INT") {
                     if (user_input.cmd == "NOW") {
-                        DateTime dt;
-                        clock_system->rtc.readTime(dt);
-                        
-                        snprintf(event_msg, sizeof(event_msg), "RTC Interrupt: Time %02d:%02d:%02d, Date %02d/%02d/%04d\n",
-                                    dt.hour, dt.minute, dt.second, dt.date, dt.month, dt.year);
-                        send_to_print_safe(event_msg);
+                        if (!clock_system->debug_mode) {
+                            DateTime dt;
+                            clock_system->rtc.readTime(dt);
+                            
+                            snprintf(event_msg, sizeof(event_msg), "RTC Interrupt: Time %02d:%02d:%02d, Date %02d/%02d/%04d\n",
+                                        dt.hour, dt.minute, dt.second, dt.date, dt.month, dt.year);
+                            send_to_print_safe(event_msg);
 
-                        clock_system->set_to_minute(dt.minute);
-                        
-                        uint8_t hour_adjusted = dt.hour % 12; // Convert to 12-hour format
-                        uint16_t hour_unit = (hour_adjusted * 60) + dt.minute;
-                        clock_system->set_to_hour(hour_unit);
+                            clock_system->set_to_minute(dt.minute);
+                            
+                            uint8_t hour_adjusted = dt.hour % 12; // Convert to 12-hour format
+                            uint16_t hour_unit = (hour_adjusted * 60) + dt.minute;
+                            clock_system->set_to_hour(hour_unit);
 
-                        clock_system->set_to_date_tens(dt.date / 10);
+                            clock_system->set_to_date_tens(dt.date / 10);
 
-                        clock_system->set_to_date_ones(dt.date % 10);
-                        
-                        clock_system->set_to_month(dt.month);
+                            clock_system->set_to_date_ones(dt.date % 10);
+                            
+                            clock_system->set_to_month(dt.month);
+                        }
                     }
                     else {
                         send_to_print_safe("I got [RTC] INT but I cant understand data/command given :(\n");
@@ -370,6 +372,25 @@ void process_event_queue(System* clock_system)
                 }
                 else {
                     send_to_print_safe("I got some instruction on [WIFI] but not too sure what is it about :(\n");
+                }
+            }
+
+            else if (user_input.type == "DEBUG") {
+                if (user_input.comp == "MODE") {
+                    if (user_input.cmd == "ON") {
+                        clock_system->debug_mode = true;
+                        send_to_print_safe("Debug mode enabled.\n");
+                    }
+                    else if (user_input.cmd == "OFF") {
+                        clock_system->debug_mode = false;
+                        send_to_print_safe("Debug mode disabled.\n");
+                    }
+                    else {
+                        send_to_print_safe("Unknown command for DEBUG MODE!\n");
+                    }
+                }
+                else {
+                    send_to_print_safe("Unknown component for DEBUG type!\n");
                 }
             }
 

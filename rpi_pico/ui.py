@@ -70,6 +70,10 @@ class PicoWindow(QWidget):
         reboot_button = QPushButton("Reboot to BOOTSEL")
         reboot_button.clicked.connect(self.reboot_to_bootsel)
 
+        # Debug Button
+        self.debug_button = QPushButton("Debug Mode OFF")
+        self.debug_button.clicked.connect(self.toggle_debug_mode)
+
         # WiFi Layout
         wifi_section = QWidget()
         wifi_section.setLayout(QHBoxLayout())
@@ -261,6 +265,7 @@ class PicoWindow(QWidget):
         #     led_buttons_grid.setColumnStretch(j, 1)
 
         controls_layout.addWidget(reboot_button)
+        controls_layout.addWidget(self.debug_button)
         controls_layout.addWidget(wifi_section)
         controls_layout.addWidget(rtc_layout)
         controls_layout.addWidget(motor_controls_layout)
@@ -423,6 +428,35 @@ class PicoWindow(QWidget):
             self.append_output(">>> Rebooting to BOOTSEL mode...")
         except Exception as e:
             self.append_output(f"Error communicating with Pico: {e}")
+
+    def toggle_debug_mode(self):
+        try:
+            # User pressed - Now exit Debug mode
+            if "ON" in self.debug_button.text():
+                try:
+                    self.serial_thread.ser.write(f"[DEBUG] MODE : OFF\n".encode())
+                    self.serial_thread.ser.flush()
+                    self.append_output(f">>> Quitting Debug Mode...")
+                except Exception as e:
+                    self.append_output(f"Error communicating with Pico: {e}")
+                    return
+                self.debug_button.setStyleSheet("") # Now Debug OFF so background back to default
+                self.debug_button.setText(f"Debug Mode OFF") # User can switch it ON next
+
+            # User pressed - Now enter Debug mode
+            elif "OFF" in self.debug_button.text():
+                try:
+                    self.serial_thread.ser.write(f"[DEBUG] MODE : ON\n".encode())
+                    self.serial_thread.ser.flush()
+                    self.append_output(f">>> Entering Debug Mode...")
+                except Exception as e:
+                    self.append_output(f"Error communicating with Pico: {e}")
+                    return
+                self.debug_button.setStyleSheet("background-color: yellow;") # Now Debug ON so background yellow
+                self.debug_button.setText(f"Debug Mode ON") # User can switch it OFF next
+
+        except Exception as e:
+            self.append_output(f"Error: {e}")
 
     # Callback to update output box
     def append_output(self, text):
