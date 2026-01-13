@@ -2,6 +2,7 @@
 #define SYSTEM_HPP
 
 #include "pico/stdlib.h"
+#include "pico/time.h"
 
 #include "tusb.h"
 #include <bsp/board_api.h>
@@ -84,14 +85,25 @@ public:
 
     ClockState state_{};
     bool debug_mode;
+
+    static System* instance_ptr;
     
     
     /// TEST UTILITIES ///
+    bool test_rtc_int_start;
+    repeating_timer_t test_rtc_int_timer;
+    static bool static_test_rtc_int_timer_callback(repeating_timer_t *rt);
+    bool test_rtc_int_timer_callback_impl(repeating_timer_t *rt);
+
     uint8_t test_minute = 0;
     uint8_t test_hour = 0;
-    void set_test_minute_hour(uint8_t minutes, uint8_t hours);
+    uint8_t test_date = 0;
+    uint8_t test_month = 0;
+    void set_test_time(uint8_t minutes, uint8_t hours, uint8_t date, uint8_t month);
     uint8_t get_test_minute();
     uint8_t get_test_hour();
+    uint8_t get_test_date();
+    uint8_t get_test_month();
     /// TEST UTILITIES ///
 
 };

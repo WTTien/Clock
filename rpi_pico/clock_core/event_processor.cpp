@@ -396,22 +396,51 @@ void process_event_queue(System* clock_system)
 
             else if (user_input.type == "TEST") {
                 if (user_input.comp == "RTC_INT") {
-                    if (user_input.cmd == "MINUTE_HOUR") {
-                        uint8_t min_now = clock_system->get_test_minute();
-                        uint8_t hour_now = clock_system->get_test_hour();
+                    if (user_input.cmd == "START") {
+                        if (!clock_system->test_rtc_int_start) {
+                            clock_system->test_rtc_int_start = true;
+                            clock_system->set_test_time(0, 0, 0, 0);
+                            add_repeating_timer_ms(1000, System::static_test_rtc_int_timer_callback, nullptr, &clock_system->test_rtc_int_timer);
+                            send_to_print_safe("RTC Interrupt TEST started.\n");
+                        }
+                        else {
+                            uint8_t min_now = clock_system->get_test_minute();
+                            uint8_t hour_now = clock_system->get_test_hour();
+                            uint8_t date_now = clock_system->get_test_date();
+                            uint8_t month_now = clock_system->get_test_month();
 
-                        snprintf(event_msg, sizeof(event_msg), "RTC Interrupt TEST: Time %02d:%02d\n",
-                                    hour_now, min_now);
-                        send_to_print_safe(event_msg);
+                            snprintf(event_msg, sizeof(event_msg), "RTC Interrupt TEST: Time %02d:%02d, Date %02d-%02d\n",
+                                        hour_now, min_now, date_now, month_now);
+                            send_to_print_safe(event_msg);
 
-                        clock_system->set_to_minute(min_now);
-                        
-                        uint8_t hour_adjusted = hour_now % 12; // Convert to 12-hour format
-                        uint16_t hour_unit = (hour_adjusted * 60) + min_now;
-                        clock_system->set_to_hour(hour_unit);
+                            clock_system->set_to_minute(min_now);
+                            
+                            uint8_t hour_adjusted = hour_now % 12; // Convert to 12-hour format
+                            uint16_t hour_unit = (hour_adjusted * 60) + min_now;
+                            clock_system->set_to_hour(hour_unit);
 
-                        send_to_print_safe("---TEST---\n");
+                            clock_system->set_to_date_tens(date_now / 10);
+
+                            clock_system->set_to_date_ones(date_now % 10);
+
+                            clock_system->set_to_month(month_now);
+
+                            send_to_print_safe("---TEST---\n");    
+                        }
                     }
+                }
+
+                else if (user_input.cmd == "STOP") {
+                    if (clock_system->test_rtc_int_start) {
+                        clock_system->test_rtc_int_start = false;
+                        clock_system->set_test_time(0, 0, 0, 0);
+                        cancel_repeating_timer(&clock_system->test_rtc_int_timer);
+                        send_to_print_safe("RTC Interrupt TEST stopped.\n");
+                    }
+                }
+
+                else {
+                    send_to_print_safe("I got [TEST] RTC_INT but not too sure what it is about :(\n");
                 }
             }
 

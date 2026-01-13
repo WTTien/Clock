@@ -8,6 +8,8 @@ void core1_main() {
     }
 }
 
+System* System::instance_ptr = nullptr;
+
 System::System()
     : onboard_led(),
       led_1A(6),
@@ -54,6 +56,10 @@ System::System()
   state_.curr_month = 12;
 
   debug_mode = false;
+  
+  test_rtc_int_start = false;
+
+  System::instance_ptr = this;
 }
 
 bool System::init()
@@ -180,16 +186,6 @@ void System::run()
     // display_wifi_status();
     /// ONE DAY THESE WILL BE GONE ///
     
-    /// TEST UTILITIES ///
-    // this->test_minute = (this->test_minute + 1) % 60;
-    // if (this->test_minute == 0) {
-    //     this->test_hour = (this->test_hour + 1) % 24;
-    // }
-    // this->set_test_minute_hour(this->test_minute, this->test_hour);
-    // char event_msg[64] = "[TEST] RTC_INT: MINUTE_HOUR\n";
-    // push_string_into_event_queue(event_msg);
-    /// TEST UTILITIES ///
-
     process_event_queue(this);
     sleep_ms(1500);
   }
@@ -326,10 +322,46 @@ void System::set_to_month(uint8_t month)
 
 
 /// TEST UTILITIES ///
-void System::set_test_minute_hour(uint8_t minutes, uint8_t hours)
+bool System::static_test_rtc_int_timer_callback(repeating_timer *rt)
+{
+  if (System::instance_ptr) {
+    return System::instance_ptr->test_rtc_int_timer_callback_impl(rt);
+  }
+  return false;
+}
+
+bool System::test_rtc_int_timer_callback_impl(repeating_timer_t *rt)
+{
+  uint8_t min = this->test_minute;
+  uint8_t hour = this->test_hour;
+  uint8_t date = this->test_date;
+  uint8_t month = this->test_month;
+
+  min = (min + 1) % 60;
+  if (min == 0) {
+      hour = (hour + 1) % 24;
+      if (hour == 0) {
+          date = (date + 1) % 32;
+          if (date == 0) {
+              month = (month + 1) % 13;
+              if (month == 0) {
+                  month = 1; // Reset month to January
+              }
+          }
+      }
+  }
+  this->set_test_time(min, hour, date, month);
+  char event_msg[64] = "[TEST] RTC_INT: START\n";
+  push_string_into_event_queue(event_msg);
+  return true; // Keep repeating
+}
+
+void System::set_test_time(uint8_t minutes, uint8_t hours, uint8_t date, uint8_t month)
 {
     this->test_minute = minutes;
     this->test_hour = hours;
+    this->test_date = date;
+    this->test_month = month;
 }
 
 uint8_t System::get_test_minute()
@@ -340,6 +372,16 @@ uint8_t System::get_test_minute()
 uint8_t System::get_test_hour()
 {
     return this->test_hour;
+}
+
+uint8_t System::get_test_date()
+{
+    return this->test_date;
+}
+
+uint8_t System::get_test_month()
+{
+    return this->test_month;
 }
 /// TEST UTILITIES ///
 
