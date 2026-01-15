@@ -86,9 +86,6 @@ public:
     ClockState state_{};
     bool debug_mode;
 
-    static System* instance_ptr;
-    
-    
     /// TEST UTILITIES ///
     bool test_rtc_int_start;
     repeating_timer_t test_rtc_int_timer;
@@ -106,6 +103,14 @@ public:
     uint8_t get_test_month();
     /// TEST UTILITIES ///
 
+    /// POWER SAVING ATTEMPT ///
+    bool should_sleep();
+    void enter_sleep_mode();
+    void wake_from_sleep_mode();
+    /// POWER SAVING ATTEMPT ///
+
+    
+    static System* instance_ptr;
 };
 
 void process_event_queue(System* clock_system);

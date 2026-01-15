@@ -3,6 +3,7 @@
 
 #include "pico/stdlib.h"
 #include "tusb.h"
+#include "pico/multicore.h"
 
 
 // First section : This is used when we send serial data FROM Pico TO PC.

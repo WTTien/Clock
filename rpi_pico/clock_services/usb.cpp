@@ -46,7 +46,7 @@ void usb_write()
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Second section : This is used when we send serial data FROM Pico TO PC. //
+// Second section : This is used when we send serial data FROM PC To Pico. //
 /////////////////////////////////////////////////////////////////////////////
 char event_queue[EVENT_QUEUE_SIZE][EVENT_MSG_SIZE];
 volatile uint32_t event_q_head = 0;
@@ -86,8 +86,11 @@ void tud_cdc_rx_cb(uint8_t itf)
     send_to_print_safe("Received: ");
     send_to_print_safe(buf);
     send_to_print_safe("\n");
-    if (!push_string_into_event_queue(buf))
-    {
+    if (!push_string_into_event_queue(buf)) {
         send_to_print_safe("Event queue full, message dropped.\n");
-    };
+    }
+    else {
+        // Notify the other core that new data is available
+        multicore_fifo_push_blocking(1);
+    }
 }

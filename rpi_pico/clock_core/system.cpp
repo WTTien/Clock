@@ -72,6 +72,9 @@ bool System::init()
   // Initialize TinyUSB stack
   board_init();
   tusb_init();
+  // Configure inter-core FIFO interrupt
+  multicore_fifo_clear_irq();
+  irq_set_enabled(SIO_IRQ_PROC0, true);
   // Launch core 1 to handle USB in the background
   multicore_launch_core1(core1_main);
 
@@ -187,7 +190,16 @@ void System::run()
     /// ONE DAY THESE WILL BE GONE ///
     
     process_event_queue(this);
-    sleep_ms(1500);
+
+    if(should_sleep())
+    {
+      enter_sleep_mode();
+      
+      // System is now in sleep mode and will carry out next instruction upon interrupt!
+      multicore_fifo_clear_irq();
+      wake_from_sleep_mode();
+    }
+    sleep_ms(250);
   }
 }
 
@@ -384,6 +396,29 @@ uint8_t System::get_test_month()
     return this->test_month;
 }
 /// TEST UTILITIES ///
+
+/// POWER SAVING ATTEMPT ///
+bool System::should_sleep()
+{
+  char temp[EVENT_MSG_SIZE];
+  return (event_q_head == event_q_tail);
+}
+
+void System::enter_sleep_mode()
+{
+  send_to_print_safe("Entering sleep mode...\n");
+  // this->onboard_led.set_led(false);
+
+  // Sleep until interrupt
+  __wfi(); // Wait for interrupt
+}
+
+void System::wake_from_sleep_mode()
+{
+  send_to_print_safe("Waking from sleep mode...\n");
+  // this->onboard_led.set_led(true);
+}
+/// POWER SAVING ATTEMPT ///
 
 bool System::try_sync_system_time_sntp()
 {
